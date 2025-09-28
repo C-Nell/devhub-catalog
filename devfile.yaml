@@ -7,10 +7,10 @@ components:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
       mountSources: true
       sourceMapping: /projects
-      cpuRequest: "2Gi"
-      cpuLimit: "2Gi"
-      memoryRequest: 2Gi
-      memoryLimit: 2Gi
+      cpuRequest: "2"       # half a core
+      cpuLimit: "2"            # max 2 cores
+      memoryRequest: "2Gi"     # 2 GB memory requested
+      memoryLimit: "2Gi"       # 2 GB memory cap
       env:
         - name: HOST
           value: "0.0.0.0"
