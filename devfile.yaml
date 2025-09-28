@@ -1,67 +1,25 @@
 schemaVersion: 2.2.2
 metadata:
-  name: devhub-devspace
+  name: backstage-min
 components:
   - name: tools
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
-      endpoints:
-        - exposure: public
-          name: nodejs
-          protocol: https
-          targetPort: 3000
-      memoryLimit: '4Gi'
-      memoryRequest: '4Gi'
-      cpuLimit: '4'
-      cpuRequest: '4'
       mountSources: true
-      volumeMounts:
-        - name: npm
-          path: /home/user/.npm
-  - name: npm
-    volume:
-      size: 1G
-# commands:
-#   - id: 1-dependencies
-#     exec:
-#       label: "Download dependencies"
-#       component: tools
-#       workingDir: ${PROJECTS_ROOT}/web-nodejs-sample/app
-#       commandLine: "npm install"
-#       group:
-#         kind: build
-#   - id: 2-run
-#     exec:
-#       label: "Run the web app"
-#       component: tools
-#       workingDir: ${PROJECTS_ROOT}/web-nodejs-sample/app
-#       commandLine: "nodemon app.js"
-#       group:
-#         kind: run
-#   - id: 3-install-and-run
-#     exec:
-#       label: "Run the web app (and download dependencies)"
-#       component: tools
-#       workingDir: ${PROJECTS_ROOT}/web-nodejs-sample/app
-#       commandLine: "npm install; nodemon app.js"
-#       group:
-#         kind: run
-#   - id: 4-debug
-#     exec:
-#       label: "Run the web app (debugging enabled)"
-#       component: tools
-#       workingDir: ${PROJECTS_ROOT}/web-nodejs-sample/app
-#       commandLine: "nodemon --inspect app.js"
-#       group:
-#         kind: debug
-#         isDefault: true
-#   - id: 5-stopapp
-#     exec:
-#       label: "Stop the web app"
-#       component: tools
-#       commandLine: >-
-#           node_server_pids=$(pgrep -fx '.*nodemon (--inspect )?app.js' | tr "\\n" " ") &&
-#           echo "Stopping node server with PIDs: ${node_server_pids}" && 
-#           kill -15 ${node_server_pids} &>/dev/null && echo 'Done.'
-#       group:
-#         kind: run
+      sourceMapping: /projects
+      env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: APP_CONFIG_app_baseUrl
+          value: "https://$(CHE_WORKSPACE_ID)-3000.$(DEVSPACES_DOMAIN)"
+        - name: APP_CONFIG_backend_baseUrl
+          value: "https://$(CHE_WORKSPACE_ID)-7007.$(DEVSPACES_DOMAIN)"
+      endpoints:
+        - name: frontend
+          targetPort: 3000
+          exposure: public
+          protocol: http
+        - name: backend
+          targetPort: 7007
+          exposure: public
+          protocol: http
