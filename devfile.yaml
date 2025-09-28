@@ -7,22 +7,17 @@ components:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
       mountSources: true
       sourceMapping: /projects
-      # Resource guardrails to prevent IDE crashes
+      cpuRequest: "2Gi"
+      cpuLimit: "2Gi"
       memoryRequest: 2Gi
       memoryLimit: 2Gi
-      cpuRequest: "2"
-      cpuLimit: "2"
       env:
         - name: HOST
           value: "0.0.0.0"
         - name: NODE_OPTIONS
-          value: "--max-old-space-size=2048"   # keeps Node from gobbling RAM
-        - name: APP_CONFIG_app_baseUrl
-          value: "https://$(CHE_WORKSPACE_ID)-3000.$(DEVSPACES_DOMAIN)"
-        - name: APP_CONFIG_backend_baseUrl
-          value: "https://$(CHE_WORKSPACE_ID)-7007.$(DEVSPACES_DOMAIN)"
+          value: "--max-old-space-size=1536"
       endpoints:
-        - name: frontend   # ≤15 chars is fine
+        - name: frontend
           targetPort: 3000
           exposure: public
           protocol: http
