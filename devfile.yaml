@@ -9,9 +9,9 @@ components:
       sourceMapping: /projects
       # Resource guardrails to prevent IDE crashes
       memoryRequest: 2Gi
-      memoryLimit: 4Gi
-      cpuRequest: "4"
-      cpuLimit: "4"
+      memoryLimit: 2Gi
+      cpuRequest: "2"
+      cpuLimit: "2"
       env:
         - name: HOST
           value: "0.0.0.0"
