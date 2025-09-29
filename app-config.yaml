@@ -1,21 +1,23 @@
 app:
   title: Scaffolded Backstage App
-  baseUrl: https://poteatc-backstage-min-code-redirect-2.apps.rm1.0a51.p1.openshiftapps.com
+  # Frontend (webpack dev server) URL (OpenShift route)
+  baseUrl: https://poteatc-backstage-frontend.apps.rm1.0a51.p1.openshiftapps.com
 
 organization:
   name: My Company
 
 backend:
-  baseUrl: https://poteatc-backstage-min-code-redirect-3.apps.rm1.0a51.p1.openshiftapps.com
+  # Backend API URL (OpenShift route)
+  baseUrl: https://poteatc-backstage-backend.apps.rm1.0a51.p1.openshiftapps.com
   listen:
-    host: 0.0.0.0   # IMPORTANT: bind to all interfaces in the pod
+    host: 0.0.0.0
     port: 7007
-  cors:
-    origin: https://poteatc-backstage-min-code-redirect-2.apps.rm1.0a51.p1.openshiftapps.com
-    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
-    credentials: true
   csp:
     connect-src: ["'self'", 'http:', 'https:']
+  cors:
+    origin: https://poteatc-backstage-frontend.apps.rm1.0a51.p1.openshiftapps.com
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+    credentials: true
   database:
     client: better-sqlite3
     connection: ':memory:'
@@ -25,16 +27,18 @@ integrations:
     - host: github.com
       token: ${GITHUB_TOKEN}
 
+proxy: {}
+
+techdocs:
+  builder: 'local'
+  generator:
+    runIn: 'docker'
+  publisher:
+    type: 'local'
+
 auth:
   providers:
     guest: {}
-
-techdocs:
-  builder: local
-  generator:
-    runIn: docker
-  publisher:
-    type: local
 
 scaffolder: {}
 
@@ -56,5 +60,8 @@ catalog:
       rules:
         - allow: [User, Group]
 
+kubernetes: {}
+
 permission:
   enabled: true
+
