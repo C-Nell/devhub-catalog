@@ -12,9 +12,9 @@ backend:
   # auth:
   #   keys:
   #     - secret: ${BACKEND_SECRET}
-  baseUrl: http://localhost:7007 
+  baseUrl: http://localhost:8998 
   listen:
-    port: 7007
+    port: 8998
     # CRITICAL: For DevSpaces, bind to all interfaces, not just localhost
     host: 0.0.0.0
   csp:
