@@ -1,10 +1,11 @@
-schemaVersion: 2.2.2
+schemaVersion: 2.2.0
 metadata:
   name: backstage-min
-attributes:
-  controller.devfile.io/storage-type: per-workspace
+  version: 1.0.0
+  description: DevSpaces workspace for Backstage
+
 components:
-  - name: backstage
+  - name: tools
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
       mountSources: true
@@ -18,38 +19,17 @@ components:
           value: "0.0.0.0"
         - name: NODE_OPTIONS
           value: "--max-old-space-size=1536"
+        # Hardcoded base URLs
+        - name: APP_BASE_URL
+          value: "https://poteatc-backstage-frontend.apps.rm1.0a51.p1.openshiftapps.com"
+        - name: BACKEND_BASE_URL
+          value: "https://poteatc-backstage-backend.apps.rm1.0a51.p1.openshiftapps.com"
       endpoints:
         - name: frontend
-          targetPort: 8998
+          targetPort: 3000   # webpack-dev-server
           exposure: public
           protocol: http
         - name: backend
-          targetPort: 7007
+          targetPort: 7007   # Backstage backend
           exposure: public
           protocol: http
-commands:
-  - id: install-deps
-    exec:
-      component: backstage
-      commandLine: yarn install
-      workingDir: /projects/devhub-devspace
-      group:
-        kind: build
-        isDefault: true
-
-  - id: start-backstage
-    exec:
-      component: backstage
-      commandLine: yarn dev
-      workingDir: /projects/devhub-devspace
-      group:
-        kind: run
-        isDefault: true
-
-  - id: test
-    exec:
-      component: backstage
-      commandLine: yarn test
-      workingDir: /projects/devhub-devspace
-      group:
-        kind: test
