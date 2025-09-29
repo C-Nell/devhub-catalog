@@ -1,6 +1,6 @@
 app:
   title: Scaffolded Backstage App
-  baseUrl: https://poteatc-backstage-min-code-redirect-3.apps.rm1.0a51.p1.openshiftapps.com
+  baseUrl: https://poteatc-backstage-min-code-redirect-2.apps.rm1.0a51.p1.openshiftapps.com
 
 organization:
   name: My Company
@@ -11,7 +11,7 @@ backend:
     host: 0.0.0.0   # IMPORTANT: bind to all interfaces in the pod
     port: 7007
   cors:
-    origin: https://poteatc-backstage-min-code-redirect-3.apps.rm1.0a51.p1.openshiftapps.com
+    origin: https://poteatc-backstage-min-code-redirect-2.apps.rm1.0a51.p1.openshiftapps.com
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
     credentials: true
   csp:
