@@ -18,7 +18,7 @@ components:
           value: "--max-old-space-size=1536"
       endpoints:
         - name: frontend
-          targetPort: 3000
+          targetPort: 8998
           exposure: public
           protocol: http
         - name: backend
