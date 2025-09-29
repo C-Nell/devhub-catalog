@@ -1,9 +1,6 @@
-schemaVersion: 2.2.0
+schemaVersion: 2.2.2
 metadata:
   name: backstage-min
-  version: 1.0.0
-  description: DevSpaces workspace for Backstage
-
 components:
   - name: tools
     container:
@@ -19,17 +16,34 @@ components:
           value: "0.0.0.0"
         - name: NODE_OPTIONS
           value: "--max-old-space-size=1536"
-        # Hardcoded base URLs
+        # Override base URLs with your OpenShift routes
         - name: APP_BASE_URL
           value: "https://poteatc-backstage-frontend.apps.rm1.0a51.p1.openshiftapps.com"
         - name: BACKEND_BASE_URL
           value: "https://poteatc-backstage-backend.apps.rm1.0a51.p1.openshiftapps.com"
       endpoints:
         - name: frontend
-          targetPort: 3000   # webpack-dev-server
+          targetPort: 3000
           exposure: public
           protocol: http
         - name: backend
-          targetPort: 7007   # Backstage backend
+          targetPort: 7007
           exposure: public
           protocol: http
+commands:
+  - id: install
+    exec:
+      component: tools
+      commandLine: node .yarn/releases/yarn-4.4.1.cjs install
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: build
+        isDefault: true
+  - id: start
+    exec:
+      component: tools
+      commandLine: node .yarn/releases/yarn-4.4.1.cjs start
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: run
+        isDefault: true
