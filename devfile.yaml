@@ -1,26 +1,23 @@
 schemaVersion: 2.2.2
 metadata:
   name: backstage-min
+attributes:
+  controller.devfile.io/storage-type: per-workspace
 components:
-  - name: tools
+  - name: backstage
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
       mountSources: true
       sourceMapping: /projects
-      cpuRequest: "2"       # half a core
-      cpuLimit: "2"            # max 2 cores
-      memoryRequest: "2Gi"     # 2 GB memory requested
-      memoryLimit: "2Gi"       # 2 GB memory cap
+      cpuRequest: "2"
+      cpuLimit: "2"
+      memoryRequest: "2Gi"
+      memoryLimit: "2Gi"
       env:
         - name: HOST
           value: "0.0.0.0"
         - name: NODE_OPTIONS
           value: "--max-old-space-size=1536"
-          env:
-        - name: APP_BASE_URL
-          value: https://poteatc-backstage-min-code-redirect-3.apps.rm1.0a51.p1.openshiftapps.com
-        - name: BACKEND_BASE_URL
-          value: https://poteatc-backstage-min-code-redirect-3.apps.rm1.0a51.p1.openshiftapps.com
       endpoints:
         - name: frontend
           targetPort: 8998
@@ -30,3 +27,29 @@ components:
           targetPort: 7007
           exposure: public
           protocol: http
+commands:
+  - id: install-deps
+    exec:
+      component: backstage
+      commandLine: yarn install
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: build
+        isDefault: true
+
+  - id: start-backstage
+    exec:
+      component: backstage
+      commandLine: yarn dev
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: run
+        isDefault: true
+
+  - id: test
+    exec:
+      component: backstage
+      commandLine: yarn test
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: test
