@@ -1,7 +1,9 @@
 app:
   title: Scaffolded Backstage App
   baseUrl: http://localhost:3000
-
+  listen:
+    host: 0.0.0.0
+    
 organization:
   name: My Company
 
@@ -14,7 +16,7 @@ backend:
   #     - secret: ${BACKEND_SECRET}
   baseUrl: http://localhost:7007
   listen:
-    port: 7007
+    host: 0.0.0.0
     # Uncomment the following host directive to bind to specific interfaces
     # host: 127.0.0.1
   csp:
