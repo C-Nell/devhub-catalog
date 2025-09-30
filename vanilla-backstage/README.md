@@ -6,17 +6,17 @@ To start the app in Dev Spaces, run:
 
 ## Yarn Install
 ```
-yarn install
+node .yarn/releases/yarn-*.cjs install
 ```
 
 ## Build both frontend and backend
 ```
-yarn build:all
+node .yarn/releases/yarn-*.cjs build:all
 ```
 
 ## Start only the backend (which will serve the built frontend)
 ```
-yarn workspace backend start
+node .yarn/releases/yarn-*.cjs workspace backend start
 ```
 
 ## Make these annotations in app config
