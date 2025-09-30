@@ -20,12 +20,12 @@ components:
         - name: frontend
           targetPort: 3000
           exposure: public
-          protocol: https  # Changed from http
+          protocol: http  # Changed from http
           secure: false    # Add this - tells OpenShift not to do TLS termination
         - name: backend
           targetPort: 7007
           exposure: public
-          protocol: https
+          protocol: http
           secure: false
 commands:
   - id: install-deps
