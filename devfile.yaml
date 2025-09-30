@@ -11,15 +11,22 @@ components:
       cpuLimit: "2"
       memoryRequest: "4Gi"
       memoryLimit: "4Gi"
+      env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: NODE_OPTIONS
+          value: "--dns-result-order=ipv4first"
       endpoints:
         - name: frontend
           targetPort: 3000
           exposure: public
-          protocol: http
+          protocol: https
+          secure: true
         - name: backend
           targetPort: 7007
           exposure: public
-          protocol: http
+          protocol: https
+          secure: true
 commands:
   - id: install-deps
     exec:
@@ -29,10 +36,24 @@ commands:
       group:
         kind: build
         isDefault: true
+  - id: start-backend
+    exec:
+      component: tools
+      commandLine: HOST=0.0.0.0 yarn workspace backend start
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: run
+  - id: start-frontend
+    exec:
+      component: tools
+      commandLine: HOST=0.0.0.0 yarn workspace app start
+      workingDir: /projects/devhub-devspace
+      group:
+        kind: run
   - id: start-app
     exec:
       component: tools
-      commandLine: yarn start
+      commandLine: HOST=0.0.0.0 yarn dev
       workingDir: /projects/devhub-devspace
       group:
         kind: run
