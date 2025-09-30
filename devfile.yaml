@@ -9,8 +9,8 @@ components:
       sourceMapping: /projects
       cpuRequest: "2"
       cpuLimit: "2"
-      memoryRequest: "2Gi"
-      memoryLimit: "2Gi"
+      memoryRequest: "4Gi"
+      memoryLimit: "4Gi"
       endpoints:
         - name: frontend
           targetPort: 3000
