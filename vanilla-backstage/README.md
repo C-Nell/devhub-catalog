@@ -4,7 +4,7 @@ This is your newly scaffolded Backstage App, Good Luck!
 
 To start the app in Dev Spaces, run:
 
-## Yarn Install
+## Install app dependencies
 ```
 node .yarn/releases/yarn-*.cjs install
 ```
