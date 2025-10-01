@@ -8,8 +8,8 @@ components:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
       mountSources: true
       sourceMapping: /projects
-      cpuLimit: "4"
-      memoryLimit: "6Gi"
+      cpuLimit: "2"
+      memoryLimit: "3Gi"
       env:
         - name: HOST
           value: "0.0.0.0"
