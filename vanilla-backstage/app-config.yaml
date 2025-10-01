@@ -1,9 +1,6 @@
 app:
   title: Scaffolded Backstage App
-  baseUrl: https://poteatc-backstage-min-backend.apps.rm1.0a51.p1.openshiftapps.com/
-  listen:
-    host: 0.0.0.0
-    port: 7007
+  baseUrl: http://localhost:3000
 
 organization:
   name: My Company
@@ -15,11 +12,9 @@ backend:
   # auth:
   #   keys:
   #     - secret: ${BACKEND_SECRET}
-  baseUrl: https://poteatc-backstage-min-backend.apps.rm1.0a51.p1.openshiftapps.com/
+  baseUrl: http://localhost:7007
   listen:
-    host: 0.0.0.0
     port: 7007
-  
     # Uncomment the following host directive to bind to specific interfaces
     # host: 127.0.0.1
   csp:
@@ -27,7 +22,7 @@ backend:
     # Content-Security-Policy directives follow the Helmet format: https://helmetjs.github.io/#reference
     # Default Helmet Content-Security-Policy values can be removed by setting the key to false
   cors:
-    origin: https://poteatc-backstage-min-frontend.apps.rm1.0a51.p1.openshiftapps.com/
+    origin: http://localhost:3000
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
     credentials: true
   # This is for local development only, it is not recommended to use this in production
