@@ -12,11 +12,7 @@ node .yarn/releases/yarn-*.cjs install
 ## Build both frontend and backend
 ```
 node .yarn/releases/yarn-*.cjs build:all
-
-# Check config
-node .yarn/releases/yarn-*.cjs backstage-cli config:print
 ```
-
 
 ## Start only the backend (which will serve the built frontend)
 ```
