@@ -22,21 +22,29 @@ components:
           targetPort: 3000
           exposure: public
           protocol: https
-          secure: true
+          secure: false     # ← CHANGE THIS
         - name: backend
           targetPort: 7007
           exposure: public
           protocol: https
-          secure: true
+          secure: false     # ← CHANGE THIS
 
 commands:
-  - id: run-backstage
+  - id: run-backend
     exec:
       component: tools
       commandLine: |
         cd /projects/devhub-devspace && \
-        node .yarn/releases/yarn-*.cjs install && \
-        node .yarn/releases/yarn-*.cjs dev
+        node .yarn/releases/yarn-*.cjs workspace backend start
+      group:
+        kind: run
+        
+  - id: run-frontend
+    exec:
+      component: tools
+      commandLine: |
+        cd /projects/devhub-devspace && \
+        node .yarn/releases/yarn-*.cjs workspace app start
       group:
         kind: run
         isDefault: true
