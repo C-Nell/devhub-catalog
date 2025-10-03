@@ -20,9 +20,8 @@ backend:
   csp:
     connect-src: ["'self'", 'http:', 'https:']
   cors:
-    origin: 
-      - https://*.apps.rm1.0a51.p1.openshiftapps.com
-      - https://localhost:3000
+    origin: https://*.apps.rm1.0a51.p1.openshiftapps.com
+      # - https://localhost:3000
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE, OPTIONS]
     credentials: true
 
