@@ -14,8 +14,8 @@ const backendIndexPath = path.join(projectDirectory, 'packages/backend/src/index
 let backendIndex = fs.readFileSync(backendIndexPath, 'utf8');
 
 // Add dotenv import and config if not already present
-if (!backendIndex.includes("import * as dotenv from 'dotenv'")) {
-  const dotenvCode = "import * as dotenv from 'dotenv';\ndotenv.config({ path: '../../.env' });\n\n";
+if (!backendIndex.includes("import dotenv from 'dotenv'")) {
+  const dotenvCode = "import dotenv from 'dotenv';\ndotenv.config({ path: '../../.env' });\n\n";
   backendIndex = dotenvCode + backendIndex;
   fs.writeFileSync(backendIndexPath, backendIndex);
   console.log('Added dotenv import and config to backend/src/index.ts');
