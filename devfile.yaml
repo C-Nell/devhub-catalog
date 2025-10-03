@@ -21,12 +21,12 @@ components:
         - name: frontend
           targetPort: 3000
           exposure: public
-          protocol: http     # Not https
+          protocol: https
           secure: false
         - name: backend
           targetPort: 7007
-          exposure: public  
-          protocol: http     # Not https
+          exposure: public
+          protocol: https
           secure: false
 
 commands:
