@@ -21,11 +21,13 @@ components:
         - name: frontend
           targetPort: 3000
           exposure: public
-          protocol: http      # ← Change to http
+          protocol: http     # Not https
+          secure: false
         - name: backend
           targetPort: 7007
-          exposure: public
-          protocol: http   
+          exposure: public  
+          protocol: http     # Not https
+          secure: false
 
 commands:
   - id: run-backend
