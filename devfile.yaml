@@ -22,12 +22,12 @@ components:
           targetPort: 3000
           exposure: public
           protocol: https
-          secure: false
+          secure: true
         - name: backend
           targetPort: 7007
           exposure: public
           protocol: https
-          secure: false
+          secure: true
 
 commands:
   - id: run-backend
