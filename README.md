@@ -48,3 +48,8 @@ backend:
           protocol: https
           secure: false
 ```
+
+## Documentation Sources:
+
+Devfile resources:
+https://devfile.io/docs/2.3.0/
