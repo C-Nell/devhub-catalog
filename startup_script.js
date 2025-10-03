@@ -31,12 +31,8 @@ const frontendUrl = execSync('oc get routes | grep 3000 | awk \'{print "https://
 const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
   .toString().trim();
 
-console.log('Frontend URL:', frontendUrl);
-console.log('Backend URL:', backendUrl);
-
 // Read the .env file
 let envContent = fs.readFileSync(path.join(projectDirectory, '.env'), 'utf8');
-console.log(envContent);
 
 // Replace values
 envContent = envContent.replace('"PLACEHOLDER_FRONTEND_URL"', frontendUrl);
