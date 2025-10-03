@@ -2,7 +2,7 @@
 
 app:
   title: Scaffolded Backstage App
-  baseUrl: https://poteatc-backstage-min-backend.apps.rm1.0a51.p1.openshiftapps.com
+  baseUrl: ${BACKEND_URL}
   listen:
     host: 0.0.0.0
     port: 7007
@@ -11,21 +11,17 @@ organization:
   name: My Company
 
 backend:
-  # auth:
-  #   dangerouslyDisableDefaultAuthPolicy: true
-  baseUrl: https://poteatc-backstage-min-backend.apps.rm1.0a51.p1.openshiftapps.com
+  baseUrl: ${BACKEND_URL}
   listen:
     host: 0.0.0.0
     port: 7007
   csp:
     connect-src: ["'self'", 'http:', 'https:']
   cors:
-    origin: https://poteatc-backstage-min-backend.apps.rm1.0a51.p1.openshiftapps.com
-      # - https://localhost:3000
+    origin: ${BACKEND_URL}
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE, OPTIONS]
     credentials: true
-
-
+    
   # This is for local development only, it is not recommended to use this in production
   # The production database configuration is stored in app-config.production.yaml
   database:
