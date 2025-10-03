@@ -29,16 +29,27 @@ components:
           secure: true
 
 commands:
-  - id: install
+  - id: debug
     exec:
-      label: "Install dependencies"
-      commandLine: node .yarn/releases/yarn-*.cjs install
+      label: "Debug - list files"
+      commandLine: |
+        pwd
+        ls -la
+        echo "Node version: $(node --version)"
+        echo "Yarn version: $(yarn --version)"
       component: tools
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: build
-        isDefault: true
+      workingDir: /projects
+      
+#   - id: install
+#     exec:
+#       label: "Install dependencies"
+#       commandLine: node .yarn/releases/yarn-*.cjs install
+#       component: tools
+#       workingDir: ${PROJECT_SOURCE}
+#       group:
+#         kind: build
+#         isDefault: true
 
-events:
-  postStart:
-    - install
+# events:
+#   postStart:
+#     - install
