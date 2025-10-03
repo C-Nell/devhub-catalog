@@ -40,7 +40,7 @@ commands:
       component: tools
       workingDir: /projects
 events:
-  postStart:
+  preStart:
     - debug
     # - install
 #   - id: install
