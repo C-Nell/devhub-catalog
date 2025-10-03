@@ -5,6 +5,20 @@ console.log('=== Running Node.js startup script ===');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const projectDirectory = '/projects/devhub-devspace'
+const backendPath = require('path');
+
+// Path to backend index.ts
+const backendIndexPath = backendPath.join(projectDirectory, 'packages/backend/src/index.ts');
+
+// Read the file
+let backendIndex = fs.readFileSync(backendIndexPath, 'utf8');
+
+// Add dotenv import if not already present
+if (!backendIndex.includes("import 'dotenv/config'")) {
+  backendIndex = "import 'dotenv/config';\n\n" + backendIndex;
+  fs.writeFileSync(backendIndexPath, backendIndex);
+  console.log('Added dotenv import to backend/src/index.ts');
+}
 
 // Copy sample-env to .env file
 fs.copyFileSync('sample-env', '.env');
@@ -28,6 +42,9 @@ envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
 
 // Write back to .env file
 fs.writeFileSync('.env', envContent);
+
+// Add dotenv to project
+execSync('node .yarn/releases/yarn-*.cjs add dotenv', { stdio: 'inherit', cwd: projectDirectory });
 
 // Run yarn install
 execSync('node .yarn/releases/yarn-*.cjs install', { stdio: 'inherit', cwd: projectDirectory });
