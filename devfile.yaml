@@ -39,7 +39,10 @@ commands:
         echo "Yarn version: $(yarn --version)"
       component: tools
       workingDir: /projects
-      
+events:
+  postStart:
+    - debug
+    # - install
 #   - id: install
 #     exec:
 #       label: "Install dependencies"
