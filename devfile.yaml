@@ -1,7 +1,6 @@
 schemaVersion: 2.2.2
 metadata:
   name: backstage-min
-
 components:
   - name: tools
     container:
@@ -30,21 +29,16 @@ components:
           secure: true
 
 commands:
-  - id: run-backend
+  - id: install
     exec:
+      label: "Install dependencies"
+      commandLine: node .yarn/releases/yarn-*.cjs install
       component: tools
-      commandLine: |
-        cd /projects/devhub-devspace && \
-        node .yarn/releases/yarn-*.cjs workspace backend start
+      workingDir: ${PROJECT_SOURCE}
       group:
-        kind: run
-        
-  - id: run-frontend
-    exec:
-      component: tools
-      commandLine: |
-        cd /projects/devhub-devspace && \
-        node .yarn/releases/yarn-*.cjs workspace app start
-      group:
-        kind: run
+        kind: build
         isDefault: true
+
+events:
+  postStart:
+    - install
