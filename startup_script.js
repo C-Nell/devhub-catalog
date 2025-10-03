@@ -42,6 +42,8 @@ console.log(envContent);
 envContent = envContent.replace('"PLACEHOLDER_FRONTEND_URL"', frontendUrl);
 envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
 
+process.env.NODE_OPTIONS = '--no-node-snapshot';
+
 // Write back to .env file
 fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
 
