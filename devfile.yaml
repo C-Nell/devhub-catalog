@@ -32,21 +32,9 @@ commands:
   - id: install
     exec:
       label: "Install dependencies"
-      commandLine: |
-        echo "🚀 COMMAND STARTED"
-        echo "Current directory: $(pwd)"
-        echo "User: $(whoami)"
-        echo "Listing /projects:"
-        ls -la /projects
-        echo "About to run yarn install..."
-        cd /projects
-        yarn install
-        echo "✅ COMMAND FINISHED"
+      commandLine: echo "🎉 IT WORKS! The command is running!"
       component: tools
       workingDir: /projects
-      group:
-        kind: build
-        isDefault: true
 
 events:
   postStart:
