@@ -29,9 +29,14 @@ components:
           secure: true
 
 commands:
+  # - id: install
+  #   exec:
+  #     commandLine: node /projects/devhub-devspace/startup-script.js
+  #     component: tools
+
   - id: install
     exec:
-      commandLine: node /projects/devhub-devspace/startup-script.js
+      commandLine: echo "🎉 POSTSTART IS WORKING!"
       component: tools
 
 events:
