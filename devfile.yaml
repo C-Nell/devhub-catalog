@@ -29,13 +29,11 @@ components:
           secure: true
 
 commands:
-  - id: install
+  - id: startup
     exec:
-      label: "Install dependencies"
-      commandLine: echo "🎉 IT WORKS! The command is running!"
+      label: "🚀 Run Startup Script"
+      commandLine: cd /projects && node startup-script.js
       component: tools
-      workingDir: /projects
-
-events:
-  preStart:
-    - install
+      group:
+        kind: build
+        isDefault: true
