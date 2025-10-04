@@ -1,6 +1,6 @@
 schemaVersion: 2.2.2
 metadata:
-  name: backstage-min
+  name: backstage-devspace
 components:
   - name: tools
     container:
