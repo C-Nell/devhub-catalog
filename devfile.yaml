@@ -29,11 +29,11 @@ components:
           secure: true
 
 commands:
-  - id: startup
+  - id: install
     exec:
-      label: "🚀 Run Startup Script"
-      commandLine: cd /projects && node startup-script.js
+      commandLine: node /projects/startup-script.js
       component: tools
-      group:
-        kind: build
-        isDefault: true
+
+events:
+  postStart:    # ← This makes it run automatically
+    - install
