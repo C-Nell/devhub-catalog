@@ -28,12 +28,12 @@ components:
           protocol: http
           secure: true
 
-# commands:
-#   - id: install
-#     exec:
-#       commandLine: node /projects/startup-script.js
-#       component: tools
+commands:
+  - id: install
+    exec:
+      commandLine: node /projects/devhub-devspace/startup-script.js
+      component: tools
 
-# events:
-#   postStart:    # ← This makes it run automatically
-#     - install
+events:
+  postStart:    # ← This makes it run automatically
+    - install
