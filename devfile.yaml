@@ -33,12 +33,15 @@ commands:
     exec:
       label: "Install dependencies"
       commandLine: |
-        echo "=== Starting yarn install ==="
+        echo "🚀 COMMAND STARTED"
+        echo "Current directory: $(pwd)"
+        echo "User: $(whoami)"
+        echo "Listing /projects:"
+        ls -la /projects
+        echo "About to run yarn install..."
         cd /projects
-        pwd
-        ls -la
         yarn install
-        echo "=== Yarn install complete ==="
+        echo "✅ COMMAND FINISHED"
       component: tools
       workingDir: /projects
       group:
