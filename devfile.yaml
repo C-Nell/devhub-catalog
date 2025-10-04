@@ -37,4 +37,5 @@ commands:
       workingDir: /projects
 
 events:
-  postStart: ["install"]
+  preStart:
+    - install
