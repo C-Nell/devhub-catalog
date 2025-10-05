@@ -43,3 +43,10 @@ commands:
       workingDir: ${PROJECT_SOURCE}/backstage
       group:
         kind: build
+
+# Add this section to make it run automatically:
+events:
+  postStart:
+    - run-startup
+
+      
