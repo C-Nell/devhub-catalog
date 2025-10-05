@@ -28,11 +28,24 @@ components:
           protocol: http
           secure: true
 commands:
-  - id: check-registry
+  - id: install
     exec:
-      commandLine: npm config get registry
+      commandLine: yarn install
       component: tools
-      group:
-        isDefault: true
-        kind: build
       workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+  
+  - id: dev
+    exec:
+      commandLine: yarn dev
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+
+events:
+  postStart:
+    - install
