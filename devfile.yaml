@@ -35,18 +35,10 @@ projects:
       checkoutFrom:
         revision: main
 commands:
-  - id: install
-    exec:
-      commandLine: yarn install
-      component: tools
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: build
-        isDefault: true
   
   - id: dev
     exec:
-      commandLine: 'node .yarn/releases/yarn-*.cjs --version
+      commandLine: 'node .yarn/releases/yarn-*.cjs --version'
       component: tools
       workingDir: ${PROJECT_SOURCE}
       group:
@@ -55,4 +47,4 @@ commands:
 
 events:
   postStart:
-    - install
+    - dev
