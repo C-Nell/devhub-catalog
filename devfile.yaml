@@ -28,10 +28,11 @@ components:
           protocol: http
           secure: true
 commands:
-  - exec:
+  - id: check-registry
+    exec:
       commandLine: npm config get registry
-      component: runtime
+      component: tools
       group:
         isDefault: true
         kind: build
-      workingDir: $
+      workingDir: ${PROJECT_SOURCE}
