@@ -2,11 +2,11 @@
 
 # [Backstage](https://backstage.io)
 
-This is your newly scaffolded Backstage App, Good Luck!
-
-To start the app in Dev Spaces, run:
+This is a scaffolded Backstage App, Good Luck!
 
 ## Run Initial Startup Script
+To start the app in dev spaces, open a terminal a run:
+
 ```
 node startup-script.js
 ```
