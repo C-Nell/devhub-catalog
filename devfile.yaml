@@ -27,18 +27,11 @@ components:
           exposure: public
           protocol: http
           secure: true
-
 commands:
-  # - id: install
-  #   exec:
-  #     commandLine: node /projects/devhub-devspace/startup-script.js
-  #     component: tools
-
-  - id: install
-    exec:
-      commandLine: echo "🎉 POSTSTART IS WORKING!"
-      component: tools
-
-events:
-  postStart:    # ← This makes it run automatically
-    - install
+  - exec:
+      commandLine: npm config get registry
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: $
