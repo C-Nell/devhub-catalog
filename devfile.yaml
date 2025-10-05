@@ -40,10 +40,6 @@ commands:
     exec:
       commandLine: node startup-script.js
       component: tools
-      workingDir: ${PROJECT_SOURCE}
+      workingDir: ${PROJECT_SOURCE}/backstage
       group:
         kind: build
-
-events:
-  postStart:
-    - run-startup
