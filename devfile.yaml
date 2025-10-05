@@ -34,17 +34,16 @@ projects:
         origin: "https://github.com/c-poteat/devhub-devspace.git"
       checkoutFrom:
         revision: main
+
 commands:
-  
-  - id: dev
+  - id: run-startup
     exec:
-      commandLine: 'node .yarn/releases/yarn-*.cjs --version'
+      commandLine: node startup-script.js
       component: tools
       workingDir: ${PROJECT_SOURCE}
       group:
-        kind: run
-        isDefault: true
+        kind: build
 
 events:
   postStart:
-    - dev
+    - run-startup
