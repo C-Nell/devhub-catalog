@@ -27,6 +27,13 @@ components:
           exposure: public
           protocol: http
           secure: true
+projects:
+  - name: backstage
+    git:
+      remotes:
+        origin: "https://github.com/c-poteat/devhub-devspace.git"
+      checkoutFrom:
+        revision: main
 commands:
   - id: install
     exec:
@@ -39,7 +46,7 @@ commands:
   
   - id: dev
     exec:
-      commandLine: yarn dev
+      commandLine: 'node .yarn/releases/yarn-*.cjs --version
       component: tools
       workingDir: ${PROJECT_SOURCE}
       group:
