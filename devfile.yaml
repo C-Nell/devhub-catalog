@@ -27,13 +27,13 @@ components:
           exposure: public
           protocol: http
           secure: true
-projects:
-  - name: backstage
-    git:
-      remotes:
-        origin: "https://github.com/c-poteat/devhub-devspace.git"
-      checkoutFrom:
-        revision: main
+# projects:
+#   - name: backstage
+#     git:
+#       remotes:
+#         origin: "https://github.com/c-poteat/devhub-devspace.git"
+#       checkoutFrom:
+#         revision: main
 
 # commands:
 #   - id: run-startup
