@@ -35,18 +35,18 @@ projects:
       checkoutFrom:
         revision: main
 
-commands:
-  - id: run-startup
-    exec:
-      commandLine: node startup-script.js
-      component: tools
-      workingDir: ${PROJECT_SOURCE}/backstage
-      group:
-        kind: build
+# commands:
+#   - id: run-startup
+#     exec:
+#       commandLine: node startup-script.js
+#       component: tools
+#       workingDir: ${PROJECT_SOURCE}/backstage
+#       group:
+#         kind: build
 
-# Add this section to make it run automatically:
-events:
-  postStart:
+# # Add this section to make it run automatically:
+# events:
+#   postStart:
     - run-startup
 
       
