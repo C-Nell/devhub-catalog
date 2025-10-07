@@ -7,6 +7,12 @@ app:
     host: 0.0.0.0
     port: 7007
 
+  analytics:
+    adoptionInsights:
+      maxBufferSize: 25
+      flushInterval: 6000
+      debug: false
+      licensedUsers: 100
 organization:
   name: My Company
 

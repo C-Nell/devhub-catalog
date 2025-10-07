@@ -1,3 +1,4 @@
+import { adoptionInsightsPlugin, AdoptionInsightsPage } from '@red-hat-developer-hub/backstage-plugin-adoption-insights';
 import { Navigate, Route } from 'react-router-dom';
 import { apiDocsPlugin, ApiExplorerPage } from '@backstage/plugin-api-docs';
 import {
@@ -24,6 +25,7 @@ import { apis } from './apis';
 import { entityPage } from './components/catalog/EntityPage';
 import { searchPage } from './components/search/SearchPage';
 import { Root } from './components/Root';
+
 
 import {
   AlertDisplay,
@@ -97,6 +99,7 @@ const routes = (
     <Route path="/settings" element={<UserSettingsPage />} />
     <Route path="/catalog-graph" element={<CatalogGraphPage />} />
     <Route path="/notifications" element={<NotificationsPage />} />
+    <Route path="/adoption-insights" element={<AdoptionInsightsPage />} />
   </FlatRoutes>
 );
 
