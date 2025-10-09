@@ -32,4 +32,10 @@ The documentation of Backstage includes:
 - [Storybook - UI components](https://backstage.io/storybook)
 
 
+### Useful commands 
+
+- Create a token: 
+```
+node -p 'require("crypto").randomBytes(24).toString("base64")'
+```
 

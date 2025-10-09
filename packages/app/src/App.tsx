@@ -1,4 +1,4 @@
-import { adoptionInsightsPlugin, AdoptionInsightsPage } from '@red-hat-developer-hub/backstage-plugin-adoption-insights';
+
 import { Navigate, Route } from 'react-router-dom';
 import { apiDocsPlugin, ApiExplorerPage } from '@backstage/plugin-api-docs';
 import {
@@ -99,7 +99,6 @@ const routes = (
     <Route path="/settings" element={<UserSettingsPage />} />
     <Route path="/catalog-graph" element={<CatalogGraphPage />} />
     <Route path="/notifications" element={<NotificationsPage />} />
-    <Route path="/adoption-insights" element={<AdoptionInsightsPage />} />
   </FlatRoutes>
 );
 

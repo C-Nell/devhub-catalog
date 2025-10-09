@@ -7,12 +7,6 @@ app:
     host: 0.0.0.0
     port: 7007
 
-  analytics:
-    adoptionInsights:
-      maxBufferSize: 25
-      flushInterval: 6000
-      debug: false
-      licensedUsers: 100
 organization:
   name: My Company
 
@@ -27,7 +21,12 @@ backend:
     origin: ${BACKEND_URL}
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE, OPTIONS]
     credentials: true
-    
+  auth:
+    externalAccess:
+      - type: static
+        options:
+          token: ""
+          subject: automation-system
   # This is for local development only, it is not recommended to use this in production
   # The production database configuration is stored in app-config.production.yaml
   database:
@@ -70,6 +69,7 @@ auth:
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
+
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
