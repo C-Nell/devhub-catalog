@@ -19,41 +19,28 @@ components:
           protocol: http
           secure: true
 
-# commands:
-  # - id: boot-background
-  #   exec:
-  #     label: "Boot (background > .boot.log)"
-  #     component: tools
-  #     workingDir: "${PROJECTS_ROOT}/devhub-catalog"
-  #     commandLine: >
-  #       bash -lc '
-  #         set -e
-  #         (
-  #             set -euo pipefail
-  #             echo "[boot] started: $(date)"
-  #             echo "[boot] node: $(node -v 2>&1 || true)"
-
-  #             node scripts/startup-script.js
-  #             echo "[boot] finished: $(date)"
-  #         ) >> .boot.log 2>&1 &
-  #         disown
-  #         echo "[boot] running in background; see .boot.log"
-  #       '
 commands:
-  - id: boot-foreground
+  - id: boot-background
     exec:
-      label: "Boot Script"
+      label: "Boot (background > .boot.log)"
       component: tools
       workingDir: "${PROJECTS_ROOT}/devhub-catalog"
-      commandLine: |
+      commandLine: >
         bash -lc '
-          echo "[boot] started: $(date)"
-          echo "[boot] node: $(node -v 2>&1 || true)"
-          node scripts/startup-script.js 2>&1 | tee .boot.log
-          echo "[boot] finished: $(date)"
+          set -e
+          (
+              set -euo pipefail
+              echo "[boot] started: $(date)"
+              echo "[boot] node: $(node -v 2>&1 || true)"
+
+              node scripts/startup-script.js
+              echo "[boot] finished: $(date)"
+          ) >> .boot.log 2>&1 &
+          disown
+          echo "[boot] running in background; see .boot.log"
         '
-      hotReloadCapable: false
+
 
 events:
   postStart:
-    - boot-foreground
+    - boot-background
