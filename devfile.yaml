@@ -46,14 +46,12 @@ commands:
       component: tools
       workingDir: "${PROJECTS_ROOT}/devhub-catalog"
       commandLine: >
-        bash -c '
+        sh -c '
           echo "[boot] started: $(date)"
           node scripts/startup-script.js
           echo "[boot] finished: $(date)"
         ' 2>&1 | tee .boot.log
-      group:
-        kind: run
-        isDefault: true
+      hotReloadCapable: false
 
 events:
   postStart:
