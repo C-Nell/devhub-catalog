@@ -34,17 +34,6 @@ try {
   console.log('\n Yarn compilation failed', err);
 }
 
-  if (error.status !== undefined) {
-    console.error(`Exit code: ${error.status}`);
-
-
-  if (error.signal) {
-    console.error(`Process killed with signal: ${error.signal}`);
-  }
-
-  process.exit(1);
- }
-
 
  // Run yarn install and use system headers
 console.log('\n========== Running yarn lint command ==========\n')
