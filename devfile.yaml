@@ -19,4 +19,27 @@ components:
           protocol: http
           secure: true
 
+commands:
+  -id: boot-background
+   exec:
+     label: "Boot (background > .boot.log)"
+     component: tools
+     workingDir: "${PROJECTS_ROOT}/devhub-catalog"
+     commandLine: >
+       bash -lc '
+         set -e
+         (
+            set -euo pipefall
+            echo "[boot] started: $(date)"
+            echo "[boot] node: $(node -v 2>&1 || true)"
 
+            node scripts/startup-script.js
+            echo "[boot] finished: $(date)"
+         ) >> .boot.log 2>&1 &
+         disown
+         echo "[boot] running in background; see .boot.log"
+       .
+
+events:
+  postStart:
+    - boot-background

@@ -1,0 +1,48 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: github-api-caller
+  title: Call Github API
+  description: This allows you to use http request module to interact with Github.
+spec:
+  owner: developers
+  type: service
+  parameters:
+    - title: Get Github Repository details.
+      required:
+        - githubOrg
+        - repoName
+      properties:
+        githubOrg:
+          type: string
+          title: The Github username or organization.
+          enum:
+            - po-org
+          default: po-org
+        repoName:
+          type: string
+          title: Repository name
+          description: Enter name of the Github Repository for GET request.
+
+  steps:
+    - id: get_repo
+      name: Get Github Repository
+      action: http:backstage:request
+      input:
+        method: "GET"
+        path: /proxy/github/api/v3/repos/${{ parameters.githubOrg }}/${{ parameters.repoName }}
+        headers:
+          content-type: "application/json"
+
+    - id: log_repo_info
+      name: Log Repo info
+      action: debug:log
+      input:
+        message: |
+          Repo metadata for ${{ parameters.githubOrg }}/${{ parameters.repoName }}:
+          ${{ steps.get_repo.output.body | dump }}
+
+  output:
+    job_data: "{{ steps.get_repo.output.body }}"
+    status_code: "{{ steps.get_repo.output.code }}"
+    pretty_json: "{{ steps.get_repo.output.body | json }}"

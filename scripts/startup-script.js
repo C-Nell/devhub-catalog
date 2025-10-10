@@ -5,7 +5,56 @@ console.log('=== Running Node.js startup script ===');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const projectDirectory = '/projects/devhub-devspace';
+const projectDirectory = '/projects/devhub-catalog';
+
+
+// Run yarn install and use system headers
+console.log('\n========== Running yarn install ==========\n')
+try {
+  execSync('node .yarn/releases/yarn-*.cjs config set --home enableTelemetry 0', { stdio: 'inherit', cwd: projectDirectory, shell: true });
+  console.log('\n Yarn telemetry disabled.\n');
+} catch (err) {
+  console.log('\n Failed to disable Yarn telemetry', err);
+}
+
+try {
+  execSync('export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install', { stdio: 'inherit', cwd: projectDirectory, shell: true });
+  console.log('\n Yarn install complete.\n');
+} catch (err) {
+  console.log('\n Yarn install Failed', err);
+}
+
+// Run yarn tsc command
+console.log('\n========== Running yarn tsc command ==========\n')
+
+try {
+  execSync('node .yarn/releases/yarn-*.cjs tsc', { stdio: 'inherit', cwd: projectDirectory, shell: true });
+  console.log('\n Yarn compilation successful.\n');
+} catch (err) {
+  console.log('\n Yarn compilation failed', err);
+}
+
+  if (error.status !== undefined) {
+    console.error(`Exit code: ${error.status}`);
+
+
+  if (error.signal) {
+    console.error(`Process killed with signal: ${error.signal}`);
+  }
+
+  process.exit(1);
+ }
+
+
+ // Run yarn install and use system headers
+console.log('\n========== Running yarn lint command ==========\n')
+ try {
+  execSync('node .yarn/releases/yarn-*.cjs lint', { stdio: 'inherit', cwd: projectDirectory, shell: true });
+  console.log('\n Linting passed.\n');
+} catch (err) {
+  console.log('\n Linting failed - fix errors before committing.', err);
+}
+
 
 // Path to backend index.ts
 const backendIndexPath = path.join(projectDirectory, 'packages/backend/src/index.ts');
@@ -21,36 +70,45 @@ if (!backendIndex.includes("import dotenv from 'dotenv'")) {
   console.log('Added dotenv import and config to backend/src/index.ts');
 }
 
-// Copy sample-env to .env file
-fs.copyFileSync(path.join(projectDirectory, 'sample-env'), path.join(projectDirectory, '.env'));
+if (fs.existsSync('.env')) {
+  console.log('\nThe .env file exists, skipping copy...')
+} else {
+  console.log('\n The .env file does not exist, copying file...');
+  fs.copyFileSync(path.join(projectDirectory, 'sample-env'), path.join(projectDirectory, '.env'));
 
-// Get routes
-const frontendUrl = execSync('oc get routes | grep 3000 | awk \'{print "https://" $2}\'')
+  const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
   .toString().trim();
 
-const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
-  .toString().trim();
+  process.env.NODE_OPTIONS = '--no-node-snapshot';
 
-// Read the .env file
-let envContent = fs.readFileSync(path.join(projectDirectory, '.env'), 'utf8');
+  // Read the .env file
+  let envContent = fs.readFileSync(path.join(projectDirectory, '.env'), 'utf8');
 
-// Replace values
-envContent = envContent.replace('"PLACEHOLDER_FRONTEND_URL"', frontendUrl);
-envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
+  const githubToken = execSync(
+    `kubectl get secrets -o json \
+    | jq -r '.items[] | select(.metadata.nam | test("personal-access-token")) | .data.token' \
+    | head -n1 | base64 -d; echo`,
+    { encoding: "utf-8" }
+  ).trim();
 
-process.env.NODE_OPTIONS = '--no-node-snapshot';
+  // Replace values
+  envContent = envContent.replace('"PLACEHOLDER_FRONTEND_URL"', frontendUrl);
+  envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
 
-// Write back to .env file
+
+  // Write back to .env file
 fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
+}
 
-// Add dotenv to project
-execSync('node .yarn/releases/yarn-*.cjs add dotenv', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-
-// Run yarn install
-execSync('node .yarn/releases/yarn-*.cjs install', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-
-// Run frontend & backend build
-execSync('node .yarn/releases/yarn-*.cjs build:all', { stdio: 'inherit', cwd: projectDirectory, shell: true });
+ // Run frontend & backend build
+ console.log('\n========== Running yarn build command ==========\n')
+ try {
+  execSync('node .yarn/releases/yarn-*.cjs build:all', { stdio: 'inherit', cwd: projectDirectory, shell: true });
+  console.log('\n Yarn build complete.\n');
+} catch (err) {
+  console.log('\n Yarn build failed', err);
+}
 
 // Start backstage
+console.log('\n========== Running Backstage application ==========\n')
 execSync('node .yarn/releases/yarn-*.cjs workspace backend start', { stdio: 'inherit', cwd: projectDirectory, shell: true });
