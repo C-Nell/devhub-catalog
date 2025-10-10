@@ -40,14 +40,7 @@ commands:
           echo "[yarn install] running in background; see .yarn-install.log"
         '
         
-  - id: watch-install-log
-    exec:
-      label: "📦 Watch Install Progress"
-      component: tools
-      workingDir: "${PROJECTS_ROOT}/devhub-catalog"
-      commandLine: "tail -f .yarn-install.log"
-
 events:
   postStart:
     - yarn-install-background
-    - watch-install-log
+
