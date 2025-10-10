@@ -20,25 +20,37 @@ components:
           secure: true
 
 commands:
+  # - id: boot-background
+  #   exec:
+  #     label: "Boot (background > .boot.log)"
+  #     component: tools
+  #     workingDir: "${PROJECTS_ROOT}/devhub-catalog"
+  #     commandLine: >
+  #       bash -lc '
+  #         set -e
+  #         (
+  #             set -euo pipefail
+  #             echo "[boot] started: $(date)"
+  #             echo "[boot] node: $(node -v 2>&1 || true)"
+
+  #             node scripts/startup-script.js
+  #             echo "[boot] finished: $(date)"
+  #         ) >> .boot.log 2>&1 &
+  #         disown
+  #         echo "[boot] running in background; see .boot.log"
+  #       '
+commands:
   - id: boot-background
     exec:
-      label: "Boot (background > .boot.log)"
+      label: "Boot Script"
       component: tools
       workingDir: "${PROJECTS_ROOT}/devhub-catalog"
       commandLine: >
-        bash -lc '
-          set -e
-          (
-              set -euo pipefail
-              echo "[boot] started: $(date)"
-              echo "[boot] node: $(node -v 2>&1 || true)"
-
-              node scripts/startup-script.js
-              echo "[boot] finished: $(date)"
-          ) >> .boot.log 2>&1 &
-          disown
-          echo "[boot] running in background; see .boot.log"
-        '
+        bash -c '
+          echo "[boot] started: $(date)"
+          node scripts/startup-script.js
+          echo "[boot] finished: $(date)"
+        ' 2>&1 | tee .boot.log
 
 events:
   postStart:
