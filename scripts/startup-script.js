@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-console.log('=== Running Node.js startup script ===');
-
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
