@@ -75,12 +75,13 @@ if (fs.existsSync('.env')) {
   // Read the .env file
   let envContent = fs.readFileSync(path.join(projectDirectory, '.env'), 'utf8');
 
+  // Get GitHub token from Kubernetes secret
   const githubToken = execSync(
-    `kubectl get secrets -o json \
-    | jq -r '.items[] | select(.metadata.nam | test("personal-access-token")) | .data.token' \
-    | head -n1 | base64 -d; echo`,
+    `kubectl get secrets -o json | jq -r '.items[] | select(.metadata.name | test("personal-access-token")) | .data.token' | head -n1 | base64 -d`,
     { encoding: "utf-8" }
   ).trim();
+
+  console.log('Token:', githubToken);
 
   // Replace .env values
   envContent = envContent.replace('"PLACEHOLDER_GITHUB_TOKEN"', githubToken);
