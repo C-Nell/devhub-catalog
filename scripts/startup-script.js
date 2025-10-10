@@ -81,12 +81,14 @@ if (fs.existsSync('.env')) {
     { encoding: "utf-8" }
   ).trim();
 
-  console.log('Token:', githubToken);
-
   // Replace .env values
   envContent = envContent.replace('"PLACEHOLDER_GITHUB_TOKEN"', githubToken);
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_AUTH_TOKEN"', backendToken);
+
+  console.log('Github Token:', githubToken);
+  console.log('Backend Url:', backendUrl);
+  console.log('Backend Auth Token:', backendToken);
 
   // Write back to .env file
 fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
