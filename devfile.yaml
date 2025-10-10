@@ -40,25 +40,20 @@ components:
   #         echo "[boot] running in background; see .boot.log"
   #       '
 commands:
-  - id: boot-background
+  - id: boot-foreground
     exec:
-      label: "Boot Script (Background)"
+      label: "Boot Script"
       component: tools
       workingDir: "${PROJECTS_ROOT}/devhub-catalog"
       commandLine: |
         bash -lc '
-          (
-            echo "[boot] started: $(date)"
-            echo "[boot] node: $(node -v 2>&1 || true)"
-            echo "[boot] working dir: $(pwd)"
-            node scripts/startup-script.js
-            echo "[boot] finished: $(date)"
-          ) >> .boot.log 2>&1 &
-          disown
-          echo "[boot] Background process started. Check .boot.log for output"
+          echo "[boot] started: $(date)"
+          echo "[boot] node: $(node -v 2>&1 || true)"
+          node scripts/startup-script.js 2>&1 | tee .boot.log
+          echo "[boot] finished: $(date)"
         '
       hotReloadCapable: false
 
 events:
   postStart:
-    - boot-background
+    - boot-foreground
