@@ -80,8 +80,10 @@ if (fs.existsSync('.env')) {
     { encoding: "utf-8" }
   ).trim();
 
+  // Replace GitHub token
+
+  envContent = envContent.replace('"PLACEHOLDER_GITHUB_TOKEN"', githubToken);
   // Replace values
-  envContent = envContent.replace('"PLACEHOLDER_FRONTEND_URL"', frontendUrl);
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
 
 
