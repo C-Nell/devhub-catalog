@@ -50,3 +50,4 @@ commands:
 events:
   postStart:
     - yarn-install-background
+    - watch-install-log
