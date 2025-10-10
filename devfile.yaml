@@ -33,7 +33,7 @@ commands:
               echo "[boot] started: $(date)"
               echo "[boot] node: $(node -v 2>&1 || true)"
 
-              node scripts/startup-script.js
+              export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install
               echo "[boot] finished: $(date)"
           ) >> .boot.log 2>&1 &
           disown

@@ -44,7 +44,6 @@ console.log('\n========== Running yarn lint command ==========\n')
   console.log('\n Linting failed - fix errors before committing.', err);
 }
 
-
 // Path to backend index.ts
 const backendIndexPath = path.join(projectDirectory, 'packages/backend/src/index.ts');
 
