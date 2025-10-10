@@ -33,7 +33,10 @@ try {
 } catch (err) {
   console.log('\n Yarn compilation failed', err);
 }
-
+// Generate a random token for BACKEND_AUTH_TOKEN
+const backendToken = execSync('node -p \'require("crypto").randomBytes(24).toString("base64")\'', {
+  encoding: 'utf8'
+}).trim();
 
  // Run yarn install and use system headers
 console.log('\n========== Running yarn lint command ==========\n')
@@ -79,12 +82,10 @@ if (fs.existsSync('.env')) {
     { encoding: "utf-8" }
   ).trim();
 
-  // Replace GitHub token
-
+  // Replace .env values
   envContent = envContent.replace('"PLACEHOLDER_GITHUB_TOKEN"', githubToken);
-  // Replace values
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
-
+  envContent = envContent.replace('"PLACEHOLDER_BACKEND_AUTH_TOKEN"', backendToken);
 
   // Write back to .env file
 fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
