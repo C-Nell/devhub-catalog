@@ -19,7 +19,7 @@ components:
           protocol: http
           secure: true
 
-commands:
+# commands:
   # - id: boot-background
   #   exec:
   #     label: "Boot (background > .boot.log)"
@@ -51,6 +51,9 @@ commands:
           node scripts/startup-script.js
           echo "[boot] finished: $(date)"
         ' 2>&1 | tee .boot.log
+      group:
+        kind: run
+        isDefault: true
 
 events:
   postStart:
