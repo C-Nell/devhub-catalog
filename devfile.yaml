@@ -35,7 +35,7 @@ commands:
 
               export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install
               echo "[yarn install] finished: $(date)"
-          ) >> .yarn-install.log 2>&1 &
+          ) >> .**YARN-INSTALL**.log 2>&1 &
           disown
           echo "[yarn install] running in background; see .**YARN-INSTALL**.log"
         '
