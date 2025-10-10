@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const projectDirectory = '/projects/devhub-catalog';
 
+process.env.NODE_OPTIONS = '--no-node-snapshot';
 
 // Run yarn install and use system headers
 console.log('\n========== Running yarn install ==========\n')
@@ -67,8 +68,6 @@ if (fs.existsSync('.env')) {
 
   const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
   .toString().trim();
-
-  process.env.NODE_OPTIONS = '--no-node-snapshot';
 
   // Read the .env file
   let envContent = fs.readFileSync(path.join(projectDirectory, '.env'), 'utf8');
