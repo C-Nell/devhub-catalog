@@ -31,7 +31,45 @@ jobs:
         fetch-depth: 0 # Required for pushing changes back
         token: ${{ secrets.GIT_TOKEN }}
 
+    - name: 🔍 Check if plugins changed
+      id: check_changes
+      run: |
+        set -euo pipefail
+        
+        METADATA_FILE="processed/.metadata.json"
+        
+        # If metadata doesn't exist, we need to process
+        if [ ! -f "$METADATA_FILE" ]; then
+          echo "No metadata file found - will process all plugins"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        HAS_CHANGES=false
+        
+        for dir in plugins/*; do
+          [ -d "$dir" ] || continue
+          name="$(basename "$dir")"
+          [[ "$name" == .* ]] && continue
+          
+          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+          STORED_HASH=$(jq -r --arg plugin "$name" '.[$plugin].hash // "none"' "$METADATA_FILE")
+          
+          if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
+            echo "✓ Plugin '$name' has changed"
+            HAS_CHANGES=true
+            break
+          fi
+        done
+        
+        if [ "$HAS_CHANGES" = false ]; then
+          echo "🎉 No plugin changes detected - exiting workflow"
+        fi
+        
+        echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+
     - name: 🔍 Get Yarn version
+      if: steps.check_changes.outputs.has_changes == 'true'
       id: yarn-version
       run: |
         file=$(ls .yarn/releases/yarn-*.cjs | head -n 1)
@@ -39,6 +77,7 @@ jobs:
         echo "YARN_VERSION=$version" >> $GITHUB_ENV
 
     - name: 🛠️ Install system dependencies
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -55,82 +94,74 @@ jobs:
         oc version || true
 
     - name: 🟢 Install Node.js 20
+      if: steps.check_changes.outputs.has_changes == 'true'
       uses: actions/setup-node@v4
       with:
         node-version: 20
 
     - name: 📦 Install dependencies (fresh each run)
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: node .yarn/releases/yarn-${YARN_VERSION}.cjs install --mode=skip-build --no-immutable
 
-    - name: 🧩 Process plugins (skip unchanged)
+    - name: 🧩 Process plugins
+      if: steps.check_changes.outputs.has_changes == 'true'
       id: process
       run: |
         set -euo pipefail
-        
-        # Create processed directory if it doesn't exist
         mkdir -p processed
-        
-        # Initialize metadata file if it doesn't exist
-        METADATA_FILE="processed/.metadata.json"
-        if [ ! -f "$METADATA_FILE" ]; then
-          echo "{}" > "$METADATA_FILE"
-        fi
         
         for dir in plugins/*; do
           [ -d "$dir" ] || continue
           name="$(basename "$dir")"
           [[ "$name" == .* ]] && continue
           
-          echo "=== Checking $name ==="
+          echo "=== Processing $name ==="
+          node scripts/process-plugin.js "$name"
+        done
+
+    - name: 💾 Update and commit metadata
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        set -euo pipefail
+        
+        METADATA_FILE="processed/.metadata.json"
+        
+        # Initialize metadata if doesn't exist
+        if [ ! -f "$METADATA_FILE" ]; then
+          echo "{}" > "$METADATA_FILE"
+        fi
+        
+        # Update metadata for all processed plugins
+        for dir in plugins/*; do
+          [ -d "$dir" ] || continue
+          name="$(basename "$dir")"
+          [[ "$name" == .* ]] && continue
           
-          # Get the last commit hash that modified this plugin
           CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
           
-          # Check stored metadata
-          STORED_HASH=$(jq -r --arg plugin "$name" '.[$plugin].hash // "none"' "$METADATA_FILE")
-          
-          if [ "$CURRENT_HASH" = "$STORED_HASH" ]; then
-            echo "✓ $name unchanged (hash: ${CURRENT_HASH:0:8}), skipping..."
-            continue
-          fi
-          
-          echo "🔨 Processing $name (changed from ${STORED_HASH:0:8} to ${CURRENT_HASH:0:8})"
-          node scripts/process-plugin.js "$name"
-          
-          # Update metadata after successful processing
           jq --arg plugin "$name" \
              --arg hash "$CURRENT_HASH" \
              --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
              '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
              "$METADATA_FILE" > "$METADATA_FILE.tmp"
           mv "$METADATA_FILE.tmp" "$METADATA_FILE"
-          
-          echo "✅ $name processed and metadata updated"
         done
-
-    - name: 💾 Commit metadata changes
-      run: |
+        
+        # Commit metadata
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        
-        if [ -f "processed/.metadata.json" ]; then
-          git add processed/.metadata.json
-          git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
-          git push
-        fi
-
-    - name: 📊 Use metadata
-      run: |
-        echo "Plugin: ${{ fromJSON(steps.process.outputs.metadata_json).plugin }}"
-        echo "Commit: ${{ fromJSON(steps.process.outputs.metadata_json).commit }}"
-        echo "Integrity: ${{ fromJSON(steps.process.outputs.metadata_json).integrity }}"
+        git add processed/.metadata.json
+        git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
+        git push
 
     - name: 🔐 Login to OpenShift cluster
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         oc login --token=${{ secrets.OC_LOGIN_TOKEN }} --server=https://api.rm1.0a51.p1.openshiftapps.com:6443
         oc project poteatc-dev
 
     - name: 📤 Copy tarball to pod
+      if: steps.check_changes.outputs.has_changes == 'true'
       env:
         NS: poteatc-dev
       run: |
@@ -156,34 +187,51 @@ jobs:
           oc -n "$NS" cp "$f" "$POD":"$DEST/"
         done
 
-    # Current  TODO NOT WORKING PREVIOUS PLUGIN HASH STAYS THE SAME.
     - name: 📝 Patch ConfigMap with updated plugin
+      if: steps.check_changes.outputs.has_changes == 'true'
       env:
         NS: poteatc-dev
         CM: redhat-developer-hub-dynamic-plugins
-        META: ${{ steps.process.outputs.metadata_json }}
       run: |
         set -euo pipefail
 
-        FILENAME=$(jq -r .filename <<<"$META")
-        INTEGRITY=$(jq -r .integrity <<<"$META")
-        URL="http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/$FILENAME"
+        # Process all tarballs in the processed folder
+        shopt -s nullglob
+        files=(processed/*.tgz)
+        
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "No .tgz files found to update ConfigMap"
+          exit 0
+        fi
 
         echo "🔍 Fetching current ConfigMap..."
         CURRENT=$(oc -n "$NS" get cm "$CM" -o jsonpath="{.data.dynamic-plugins\.yaml}" || echo "")
 
-        echo "🔍 Cleaning up previous entries for the same plugin URL..."
-        # Remove any existing lines matching the same package URL
-        CLEANED=$(echo "$CURRENT" | grep -v "$URL" || true)
+        UPDATED="$CURRENT"
 
-        echo "➕ Adding updated plugin entry..."
-        NEW_ENTRY=$(printf '  - package: %s\n    integrity: %s\n    disabled: false\n' "$URL" "$INTEGRITY")
+        for f in "${files[@]}"; do
+          FILENAME=$(basename "$f")
+          
+          # Calculate integrity hash
+          INTEGRITY="sha512-$(openssl dgst -sha512 -binary "$f" | openssl base64 -A)"
+          
+          URL="http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/$FILENAME"
+          
+          echo "Processing: $FILENAME"
+          echo "Integrity: $INTEGRITY"
 
-        if [ -n "$CLEANED" ]; then
-          UPDATED="$CLEANED"$'\n'"$NEW_ENTRY"
-        else
-          UPDATED="$NEW_ENTRY"
-        fi
+          # Remove any existing lines matching the same package URL
+          UPDATED=$(echo "$UPDATED" | grep -v "$URL" || true)
+
+          # Add updated plugin entry
+          NEW_ENTRY=$(printf '  - package: %s\n    integrity: %s\n    disabled: false\n' "$URL" "$INTEGRITY")
+          
+          if [ -n "$UPDATED" ]; then
+            UPDATED="$UPDATED"$'\n'"$NEW_ENTRY"
+          else
+            UPDATED="$NEW_ENTRY"
+          fi
+        done
 
         echo "🔧 Patching ConfigMap with updated dynamic-plugins.yaml..."
         PATCH=$(jq -Rn --arg v "$UPDATED" '{"data": {"dynamic-plugins.yaml": $v}}')
@@ -194,6 +242,7 @@ jobs:
         echo "✅ ConfigMap updated successfully."
 
     - name: 🔄 Restart RHDH deployment
+      if: steps.check_changes.outputs.has_changes == 'true'
       env:
         NS: poteatc-dev
       run: |
@@ -209,6 +258,7 @@ jobs:
         echo "🚀 Rollout triggered, not waiting for completion."
 
     - name: ⚠️ Display Plugin Configuration Disclaimer
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         echo "------------------------------------------------------------"
         echo "This plugin may require additional configuration in your"
