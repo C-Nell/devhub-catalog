@@ -8,9 +8,12 @@ on:
     branches:
       - main
       - 'feature/**'
-      
+
     paths:
       - 'plugins/**'
+      - 'scripts/process-plugin.js'
+      - 'package.json'
+      - '.yarnrc.yml' 
 
   workflow_dispatch:
 
