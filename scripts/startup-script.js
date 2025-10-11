@@ -28,56 +28,56 @@ try {
 
   // Check if alias already exists
   if (content.includes('alias yarn=')) {
-    console.log('\nYarn alias already exists');
+    console.log('\n✔️  Yarn alias already exists');
   } else {
     // Append the alias
     fs.appendFileSync(configFile, `\n# Custom Yarn alias\n${aliasLine}\n`);
-    console.log('\n✅ Alias added!');
-    console.log(`Run: source ${configFile}`);
+    console.log('\n✅  Alias added!');
+    console.log(`✔️  Run: source ${configFile}`);
   }
 } catch (error) {
-  console.error('\nError:', error.message);
+  console.error('\n❌  Error:', error.message);
 }
 
-console.log('\n========== Running yarn disable telemetry command ==========\n')
+console.log('\n🔧 ========== Disabling Yarn Telemetry ==========\n')
 
 try {
   execSync('node .yarn/releases/yarn-*.cjs config set --home enableTelemetry 0', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn telemetry disabled.');
+  console.log('\n✅  Yarn telemetry disabled');
 } catch (err) {
-  console.log('\n Failed to disable Yarn telemetry', err);
+  console.log('\n❌  Failed to disable Yarn telemetry', err);
 }
 
-console.log('\n========== Running yarn install command ==========\n')
+console.log('\n📦 ========== Installing Dependencies ==========\n')
 
 try {
   execSync('export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn install complete');
+  console.log('\n✅  Dependencies installed');
 } catch (err) {
-  console.log('\n Yarn install Failed', err);
+  console.log('\n❌  Dependency installation failed', err);
 }
 
 // Run yarn tsc command
-console.log('\n========== Running yarn tsc command ==========\n')
+console.log('\n📝 ========== Type Checking ==========\n')
 
 try {
   execSync('node .yarn/releases/yarn-*.cjs tsc', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn compilation successful');
+  console.log('\n✅  Type checking passed');
 } catch (err) {
-  console.log('\n Yarn compilation failed', err);
+  console.log('\n❌  Type checking failed', err);
 }
+
 // Generate a random token for BACKEND_AUTH_TOKEN
 const backendToken = execSync('node -p \'require("crypto").randomBytes(24).toString("base64")\'', {
   encoding: 'utf8'
 }).trim();
 
- // Run yarn install and use system headers
-console.log('\n========== Running yarn lint command ==========')
- try {
+console.log('\n🔍 ========== Running Linter ==========\n')
+try {
   execSync('node .yarn/releases/yarn-*.cjs lint', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Linting passed.\n');
+  console.log('\n✅  Linting passed');
 } catch (err) {
-  console.log('\n Linting failed - fix errors before committing.', err);
+  console.log('\n❌  Linting failed - fix errors before committing', err);
 }
 
 // Path to backend index.ts
@@ -86,22 +86,27 @@ const backendIndexPath = path.join(projectDirectory, 'packages/backend/src/index
 // Read the file
 let backendIndex = fs.readFileSync(backendIndexPath, 'utf8');
 
+console.log('\n⚙️  ========== Configuring Backend ==========\n');
+
 // Add dotenv import and config if not already present
 if (!backendIndex.includes("import dotenv from 'dotenv'")) {
   const dotenvCode = "import dotenv from 'dotenv';\ndotenv.config({ path: '../../.env' });\n\n";
   backendIndex = dotenvCode + backendIndex;
   fs.writeFileSync(backendIndexPath, backendIndex);
-  console.log('Added dotenv import and config to backend/src/index.ts');
+  console.log('✔️  Added dotenv import and config to backend/src/index.ts');
+} else {
+  console.log('✔️  Dotenv already configured');
 }
 
 if (fs.existsSync('.env')) {
-  console.log('\nThe .env file exists, skipping copy...')
+  console.log('\n✔️  .env file exists, skipping setup...');
 } else {
-  console.log('\n The .env file does not exist, copying file...');
+  console.log('\n🔐 ========== Setting Up Environment Variables ==========\n');
+  console.log('📄  Creating .env file...');
   fs.copyFileSync(path.join(projectDirectory, 'sample-env'), path.join(projectDirectory, '.env'));
 
   const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
-  .toString().trim();
+    .toString().trim();
 
   // Read the .env file
   let envContent = fs.readFileSync(path.join(projectDirectory, '.env'), 'utf8');
@@ -117,24 +122,24 @@ if (fs.existsSync('.env')) {
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_AUTH_TOKEN"', backendToken);
 
-  console.log('Debugging env vars...\n')
-  console.log('Github Token:', githubToken);
-  console.log('Backend Url:', backendUrl);
-  console.log('Backend Auth Token:', backendToken);
+  console.log('\nℹ️  Environment variables configured:');
+  console.log('  🔑  GitHub Token: ✓');
+  console.log('  🌐  Backend URL:', backendUrl);
+  console.log('  🔐  Auth Token: ✓');
 
   // Write back to .env file
-fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
+  fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
+  console.log('\n✅  .env file configured');
 }
 
- // Run frontend & backend build
- console.log('\n========== Running yarn build command ==========')
- try {
+console.log('\n🏗️  ========== Building Application ==========\n')
+try {
   execSync('node .yarn/releases/yarn-*.cjs build:all', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn build complete');
+  console.log('\n✅  Build complete');
 } catch (err) {
-  console.log('\n Yarn build failed', err);
+  console.log('\n❌  Build failed', err);
 }
 
 // Start backstage
-console.log('\n========== Running Backstage application ==========\n')
+console.log('\n🚀 ========== Starting Backstage Application ==========\n')
 execSync('node .yarn/releases/yarn-*.cjs workspace backend start', { stdio: 'inherit', cwd: projectDirectory, shell: true });
