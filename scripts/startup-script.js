@@ -2,19 +2,53 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
+const os = require('os'); 
 const path = require('path');
 const projectDirectory = '/projects/devhub-catalog';
 
 process.env.NODE_OPTIONS = '--no-node-snapshot';
 
-// Run yarn install and use system headers
-console.log('\n========== Running yarn install ==========\n')
+// Get absolute path to your yarn file
+const yarnPath = path.resolve(projectDirectory, '.yarn/releases/yarn-*.cjs');
+
+// Determine which config file to use
+const homeDir = os.homedir();
+const isZsh = process.env.SHELL?.includes('zsh');
+const configFile = isZsh ? path.join(homeDir, '.zshrc') : path.join(homeDir, '.bashrc');
+
+// Create the alias line
+const aliasLine = `alias yarn='node ${yarnPath}'`;
+
+try {
+  // Read existing content
+  let content = '';
+  if (fs.existsSync(configFile)) {
+    content = fs.readFileSync(configFile, 'utf8');
+  }
+
+  // Check if alias already exists
+  if (content.includes('alias yarn=')) {
+    console.log('Yarn alias already exists');
+  } else {
+    // Append the alias
+    fs.appendFileSync(configFile, `\n# Custom Yarn alias\n${aliasLine}\n`);
+    console.log('✅ Alias added!');
+    console.log(`Run: source ${configFile}`);
+  }
+} catch (error) {
+  console.error('Error:', error.message);
+}
+
+console.log('\n========== Running yarn disable telemetry command ==========\n')
+
 try {
   execSync('node .yarn/releases/yarn-*.cjs config set --home enableTelemetry 0', { stdio: 'inherit', cwd: projectDirectory, shell: true });
   console.log('\n Yarn telemetry disabled.\n');
 } catch (err) {
   console.log('\n Failed to disable Yarn telemetry', err);
 }
+
+console.log('\n========== Running yarn install command ==========\n')
 
 try {
   execSync('export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install', { stdio: 'inherit', cwd: projectDirectory, shell: true });
