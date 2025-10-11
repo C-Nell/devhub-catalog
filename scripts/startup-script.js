@@ -43,7 +43,7 @@ console.log('\n========== Running yarn disable telemetry command ==========\n')
 
 try {
   execSync('node .yarn/releases/yarn-*.cjs config set --home enableTelemetry 0', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn telemetry disabled.\n');
+  console.log('\n Yarn telemetry disabled.');
 } catch (err) {
   console.log('\n Failed to disable Yarn telemetry', err);
 }
@@ -62,7 +62,7 @@ console.log('\n========== Running yarn tsc command ==========\n')
 
 try {
   execSync('node .yarn/releases/yarn-*.cjs tsc', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn compilation successful.\n');
+  console.log('\n Yarn compilation successful');
 } catch (err) {
   console.log('\n Yarn compilation failed', err);
 }
@@ -72,7 +72,7 @@ const backendToken = execSync('node -p \'require("crypto").randomBytes(24).toStr
 }).trim();
 
  // Run yarn install and use system headers
-console.log('\n========== Running yarn lint command ==========\n')
+console.log('\n========== Running yarn lint command ==========')
  try {
   execSync('node .yarn/releases/yarn-*.cjs lint', { stdio: 'inherit', cwd: projectDirectory, shell: true });
   console.log('\n Linting passed.\n');
@@ -97,7 +97,7 @@ if (!backendIndex.includes("import dotenv from 'dotenv'")) {
 if (fs.existsSync('.env')) {
   console.log('\nThe .env file exists, skipping copy...')
 } else {
-  console.log('\n The .env file does not exist, copying file...\n');
+  console.log('\n The .env file does not exist, copying file...');
   fs.copyFileSync(path.join(projectDirectory, 'sample-env'), path.join(projectDirectory, '.env'));
 
   const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
@@ -127,10 +127,10 @@ fs.writeFileSync(path.join(projectDirectory, '.env'), envContent);
 }
 
  // Run frontend & backend build
- console.log('\n========== Running yarn build command ==========\n')
+ console.log('\n========== Running yarn build command ==========')
  try {
   execSync('node .yarn/releases/yarn-*.cjs build:all', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn build complete.\n');
+  console.log('\n Yarn build complete');
 } catch (err) {
   console.log('\n Yarn build failed', err);
 }
