@@ -41,6 +41,6 @@ commands:
         '
         
 events:
-  postStart:
+  preStart:
     - yarn-install-background
 
