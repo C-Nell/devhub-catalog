@@ -1,4 +1,4 @@
-name: RHDH Plugin Pipeline
+name: Backstage > RHDH Plugin Pipeline
 
 permissions:
   contents: write
@@ -19,6 +19,7 @@ on:
 
 jobs:
   install-dependencies:
+    name: 🚀 Build & Deploy RHDH Plugin
     runs-on: ubuntu-latest
     env:
       npm_config_nodedir: /usr
@@ -58,15 +59,6 @@ jobs:
       with:
         node-version: 20
 
-    - name: 🗑️ Deep Clean Yarn State
-      run: |
-        echo "🗑️ Clearing Yarn state and caches completely..."
-        rm -rf .yarn/cache
-        rm -f yarn.lock
-        rm -f .pnp.cjs .pnp.loader.mjs
-        rm -f .yarn/install-state.gz
-        echo "✅ Yarn state fully reset."
-
     - name: 📦 Install dependencies (fresh each run)
       run: node .yarn/releases/yarn-${YARN_VERSION}.cjs install --mode=skip-build --no-immutable
 
@@ -81,15 +73,6 @@ jobs:
           echo "=== Processing $name ==="
           node scripts/process-plugin.js "$name"
         done
-
-    - name: 📝 Commit updated yarn.lock
-      if: github.ref == 'refs/heads/main'
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add yarn.lock
-        git commit -m "chore: update yarn.lock [skip ci]" || echo "No changes to commit"
-        git push origin HEAD:main
 
     - name: 📊 Use metadata
       run: |
@@ -164,8 +147,6 @@ jobs:
         rm patch.json
 
         echo "✅ ConfigMap updated successfully."
-
-
 
     - name: 🔄 Restart RHDH deployment
       env:
