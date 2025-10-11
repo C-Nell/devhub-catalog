@@ -18,29 +18,34 @@ components:
           exposure: public
           protocol: http
           secure: true
-
-commands:
-  - id: yarn-install-background
-    exec:
-      label: "yarn-install (background > .**YARN-INSTALL**.log)"
-      component: tools
-      workingDir: "${PROJECTS_ROOT}/devhub-catalog"
-      commandLine: >
-        bash -lc '
+  
+  # Dedicated init container for yarn install
+  - name: yarn-installer
+    container:
+      image: registry.redhat.io/devspaces/udi-rhel9:3.23
+      mountSources: true
+      sourceMapping: /projects
+      # Define the command directly in the container
+      command: ['bash', '-lc']
+      args:
+        - |
           set -e
+          cd ${PROJECTS_ROOT}/devhub-catalog
           (
               set -euo pipefail
               echo "[yarn install] started: $(date)"
               echo "[yarn install] node: $(node -v 2>&1 || true)"
-
               export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install
               echo "[yarn install] finished: $(date)"
           ) >> **YARN-INSTALL**.log 2>&1 &
           disown
           echo "[yarn install] running in background; see .**YARN-INSTALL**.log"
-        '
+
+commands:
+  - id: yarn-install-background
+    apply:
+      component: yarn-installer
         
 events:
   preStart:
     - yarn-install-background
-
