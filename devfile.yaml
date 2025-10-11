@@ -33,7 +33,7 @@ commands:
               set -euo pipefail
               echo "[yarn install] started: $(date)"
               echo "[yarn install] node: $(node -v 2>&1 || true)"
-              export npm_config_nodedir=/usr && alias yarn='node .yarn/releases/yarn-*.cjs' && yarn install
+              export npm_config_nodedir=/usr && alias yarn=node .yarn/releases/yarn-*.cjs && yarn install
               echo "[yarn install] finished: $(date)"
           ) >> **YARN-INSTALL**.log 2>&1 &
           disown
