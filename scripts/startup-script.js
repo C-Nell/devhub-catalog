@@ -28,15 +28,15 @@ try {
 
   // Check if alias already exists
   if (content.includes('alias yarn=')) {
-    console.log('Yarn alias already exists');
+    console.log('\nYarn alias already exists');
   } else {
     // Append the alias
     fs.appendFileSync(configFile, `\n# Custom Yarn alias\n${aliasLine}\n`);
-    console.log('✅ Alias added!');
+    console.log('\n✅ Alias added!');
     console.log(`Run: source ${configFile}`);
   }
 } catch (error) {
-  console.error('Error:', error.message);
+  console.error('\nError:', error.message);
 }
 
 console.log('\n========== Running yarn disable telemetry command ==========\n')
