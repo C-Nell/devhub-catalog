@@ -18,34 +18,44 @@ components:
           exposure: public
           protocol: http
           secure: true
+      # No user override needed - will use platform-assigned UID
   
-  # Dedicated init container for yarn install
   - name: yarn-installer
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:3.23
       mountSources: true
       sourceMapping: /projects
-      # Define the command directly in the container
-      command: ['bash', '-lc']
+      memoryLimit: "2Gi"
+      # No user override needed - will use same platform-assigned UID
       args:
+        - bash
+        - -lc
         - |
           set -e
+          
+          # Verify we're running as expected user
+          echo "[yarn install] Running as user: $(whoami) (UID: $(id -u), GID: $(id -g))"
+          
           cd ${PROJECTS_ROOT}/devhub-catalog
-          (
-              set -euo pipefail
-              echo "[yarn install] started: $(date)"
-              echo "[yarn install] node: $(node -v 2>&1 || true)"
-              export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install
-              echo "[yarn install] finished: $(date)"
-          ) >> **YARN-INSTALL**.log 2>&1 &
-          disown
-          echo "[yarn install] running in background; see .**YARN-INSTALL**.log"
+          echo "[yarn install] started: $(date)"
+          echo "[yarn install] node version: $(node -v)"
+          
+          export npm_config_nodedir=/usr
+          node .yarn/releases/yarn-*.cjs install
+          
+          # Set group permissions so main container can access files
+          # OpenShift uses group 0 (root) for shared access
+          echo "[yarn install] Setting group permissions..."
+          find node_modules -type d -exec chmod g+rwx {} \; 2>/dev/null || true
+          find node_modules -type f -exec chmod g+rw {} \; 2>/dev/null || true
+          
+          echo "[yarn install] finished: $(date)"
 
 commands:
-  - id: yarn-install-background
+  - id: yarn-install-init
     apply:
       component: yarn-installer
         
 events:
   preStart:
-    - yarn-install-background
+    - yarn-install-init
