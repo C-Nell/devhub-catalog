@@ -21,7 +21,7 @@ components:
 
 commands:
   - id: yarn-install-background
-    exec:
+    apply:
       label: "yarn-install (background > .**YARN-INSTALL**.log)"
       component: tools
       workingDir: "${PROJECTS_ROOT}/devhub-catalog"
