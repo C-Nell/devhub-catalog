@@ -7,10 +7,10 @@ on:
   push:
     branches:
       - main
+      - 'feature/**'
     paths:
       - 'plugins/**'
-      - 'feature/**'
-      
+
   workflow_dispatch:
 
 jobs:
