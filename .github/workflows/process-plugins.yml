@@ -1,7 +1,7 @@
 name: RHDH Plugin Pipeline
 
 permissions:
-  contents: write # Required to push updated yarn.lock back to main branch
+  contents: write
 
 on:
   push:
