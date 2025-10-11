@@ -9,10 +9,8 @@ on:
       - main
     paths:
       - 'plugins/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'plugins/**'
+      - 'feature/**'
+      
   workflow_dispatch:
 
 jobs:
