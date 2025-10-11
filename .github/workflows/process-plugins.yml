@@ -62,17 +62,62 @@ jobs:
     - name: 📦 Install dependencies (fresh each run)
       run: node .yarn/releases/yarn-${YARN_VERSION}.cjs install --mode=skip-build --no-immutable
 
-    - name: 🧩 Process plugins
+    - name: 🧩 Process plugins (skip unchanged)
       id: process
       run: |
         set -euo pipefail
+        
+        # Create processed directory if it doesn't exist
+        mkdir -p processed
+        
+        # Initialize metadata file if it doesn't exist
+        METADATA_FILE="processed/.metadata.json"
+        if [ ! -f "$METADATA_FILE" ]; then
+          echo "{}" > "$METADATA_FILE"
+        fi
+        
         for dir in plugins/*; do
           [ -d "$dir" ] || continue
           name="$(basename "$dir")"
-          [[ "$name" == .* ]] && continue # Skip hidden folders
-          echo "=== Processing $name ==="
+          [[ "$name" == .* ]] && continue
+          
+          echo "=== Checking $name ==="
+          
+          # Get the last commit hash that modified this plugin
+          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+          
+          # Check stored metadata
+          STORED_HASH=$(jq -r --arg plugin "$name" '.[$plugin].hash // "none"' "$METADATA_FILE")
+          
+          if [ "$CURRENT_HASH" = "$STORED_HASH" ]; then
+            echo "✓ $name unchanged (hash: ${CURRENT_HASH:0:8}), skipping..."
+            continue
+          fi
+          
+          echo "🔨 Processing $name (changed from ${STORED_HASH:0:8} to ${CURRENT_HASH:0:8})"
           node scripts/process-plugin.js "$name"
+          
+          # Update metadata after successful processing
+          jq --arg plugin "$name" \
+             --arg hash "$CURRENT_HASH" \
+             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+             '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
+             "$METADATA_FILE" > "$METADATA_FILE.tmp"
+          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+          
+          echo "✅ $name processed and metadata updated"
         done
+
+    - name: 💾 Commit metadata changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        if [ -f "processed/.metadata.json" ]; then
+          git add processed/.metadata.json
+          git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
+          git push
+        fi
 
     - name: 📊 Use metadata
       run: |
