@@ -52,7 +52,7 @@ console.log('\n========== Running yarn install command ==========\n')
 
 try {
   execSync('export npm_config_nodedir=/usr && node .yarn/releases/yarn-*.cjs install', { stdio: 'inherit', cwd: projectDirectory, shell: true });
-  console.log('\n Yarn install complete.\n');
+  console.log('\n Yarn install complete');
 } catch (err) {
   console.log('\n Yarn install Failed', err);
 }
@@ -97,7 +97,7 @@ if (!backendIndex.includes("import dotenv from 'dotenv'")) {
 if (fs.existsSync('.env')) {
   console.log('\nThe .env file exists, skipping copy...')
 } else {
-  console.log('\n The .env file does not exist, copying file...');
+  console.log('\n The .env file does not exist, copying file...\n');
   fs.copyFileSync(path.join(projectDirectory, 'sample-env'), path.join(projectDirectory, '.env'));
 
   const backendUrl = execSync('oc get routes | grep 7007 | awk \'{print "https://" $2}\'')
@@ -117,6 +117,7 @@ if (fs.existsSync('.env')) {
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_URL"', backendUrl);
   envContent = envContent.replace('"PLACEHOLDER_BACKEND_AUTH_TOKEN"', backendToken);
 
+  console.log('Debugging env vars...\n')
   console.log('Github Token:', githubToken);
   console.log('Backend Url:', backendUrl);
   console.log('Backend Auth Token:', backendToken);
