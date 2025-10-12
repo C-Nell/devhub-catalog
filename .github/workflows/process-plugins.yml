@@ -186,85 +186,91 @@ jobs:
           echo "Copying $(basename "$f")"
           oc -n "$NS" cp "$f" "$POD":"$DEST/"
         done
+    - name: Checkout target repository
+      uses: actions/checkout@v4
+      with:
+        repository: C-Nell/devhub-gitops
+        ref: main  # Specify the branch here
+        token: ${{ secrets.PAT_TOKEN }}
+        path: devhub-gitops
+    # - name: 📝 Patch ConfigMap with updated plugin
+    #   if: steps.check_changes.outputs.has_changes == 'true'
+    #   env:
+    #     NS: poteatc-dev
+    #     CM: redhat-developer-hub-dynamic-plugins
+    #   run: |
+    #     set -euo pipefail
 
-    - name: 📝 Patch ConfigMap with updated plugin
-      if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        NS: poteatc-dev
-        CM: redhat-developer-hub-dynamic-plugins
-      run: |
-        set -euo pipefail
-
-        # Process all tarballs in the processed folder
-        shopt -s nullglob
-        files=(processed/*.tgz)
+    #     # Process all tarballs in the processed folder
+    #     shopt -s nullglob
+    #     files=(processed/*.tgz)
         
-        if [ ${#files[@]} -eq 0 ]; then
-          echo "No .tgz files found to update ConfigMap"
-          exit 0
-        fi
+    #     if [ ${#files[@]} -eq 0 ]; then
+    #       echo "No .tgz files found to update ConfigMap"
+    #       exit 0
+    #     fi
 
-        echo "🔍 Fetching current ConfigMap..."
-        CURRENT=$(oc -n "$NS" get cm "$CM" -o jsonpath="{.data.dynamic-plugins\.yaml}" || echo "")
+    #     echo "🔍 Fetching current ConfigMap..."
+    #     CURRENT=$(oc -n "$NS" get cm "$CM" -o jsonpath="{.data.dynamic-plugins\.yaml}" || echo "")
 
-        UPDATED="$CURRENT"
+    #     UPDATED="$CURRENT"
 
-        for f in "${files[@]}"; do
-          FILENAME=$(basename "$f")
+    #     for f in "${files[@]}"; do
+    #       FILENAME=$(basename "$f")
           
-          # Calculate integrity hash
-          INTEGRITY="sha512-$(openssl dgst -sha512 -binary "$f" | openssl base64 -A)"
+    #       # Calculate integrity hash
+    #       INTEGRITY="sha512-$(openssl dgst -sha512 -binary "$f" | openssl base64 -A)"
           
-          URL="http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/$FILENAME"
+    #       URL="http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/$FILENAME"
           
-          echo "Processing: $FILENAME"
-          echo "Integrity: $INTEGRITY"
+    #       echo "Processing: $FILENAME"
+    #       echo "Integrity: $INTEGRITY"
 
-          # Remove any existing lines matching the same package URL
-          UPDATED=$(echo "$UPDATED" | grep -v "$URL" || true)
+    #       # Remove any existing lines matching the same package URL
+    #       UPDATED=$(echo "$UPDATED" | grep -v "$URL" || true)
 
-          # Add updated plugin entry
-          NEW_ENTRY=$(printf '  - package: %s\n    integrity: %s\n    disabled: false\n' "$URL" "$INTEGRITY")
+    #       # Add updated plugin entry
+    #       NEW_ENTRY=$(printf '  - package: %s\n    integrity: %s\n    disabled: false\n' "$URL" "$INTEGRITY")
           
-          if [ -n "$UPDATED" ]; then
-            UPDATED="$UPDATED"$'\n'"$NEW_ENTRY"
-          else
-            UPDATED="$NEW_ENTRY"
-          fi
-        done
+    #       if [ -n "$UPDATED" ]; then
+    #         UPDATED="$UPDATED"$'\n'"$NEW_ENTRY"
+    #       else
+    #         UPDATED="$NEW_ENTRY"
+    #       fi
+    #     done
 
-        echo "🔧 Patching ConfigMap with updated dynamic-plugins.yaml..."
-        PATCH=$(jq -Rn --arg v "$UPDATED" '{"data": {"dynamic-plugins.yaml": $v}}')
-        echo "$PATCH" > patch.json
-        oc -n "$NS" patch cm "$CM" --type merge --patch-file patch.json
-        rm patch.json
+    #     echo "🔧 Patching ConfigMap with updated dynamic-plugins.yaml..."
+    #     PATCH=$(jq -Rn --arg v "$UPDATED" '{"data": {"dynamic-plugins.yaml": $v}}')
+    #     echo "$PATCH" > patch.json
+    #     oc -n "$NS" patch cm "$CM" --type merge --patch-file patch.json
+    #     rm patch.json
 
-        echo "✅ ConfigMap updated successfully."
+    #     echo "✅ ConfigMap updated successfully."
 
-    - name: 🔄 Restart RHDH deployment
-      if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        NS: poteatc-dev
-      run: |
-        set -euo pipefail
-        DEPLOY=$(oc -n "$NS" get deploy -o name | grep redhat-developer-hub || true)
-        if [ -z "$DEPLOY" ]; then
-          echo "❌ Could not find a deployment named redhat-developer-hub"
-          exit 1
-        fi
+    # - name: 🔄 Restart RHDH deployment
+    #   if: steps.check_changes.outputs.has_changes == 'true'
+    #   env:
+    #     NS: poteatc-dev
+    #   run: |
+    #     set -euo pipefail
+    #     DEPLOY=$(oc -n "$NS" get deploy -o name | grep redhat-developer-hub || true)
+    #     if [ -z "$DEPLOY" ]; then
+    #       echo "❌ Could not find a deployment named redhat-developer-hub"
+    #       exit 1
+    #     fi
 
-        echo "🔄 Restarting $DEPLOY in $NS"
-        oc -n "$NS" rollout restart "$DEPLOY"
-        echo "🚀 Rollout triggered, not waiting for completion."
+    #     echo "🔄 Restarting $DEPLOY in $NS"
+    #     oc -n "$NS" rollout restart "$DEPLOY"
+    #     echo "🚀 Rollout triggered, not waiting for completion."
 
-    - name: ⚠️ Display Plugin Configuration Disclaimer
-      if: steps.check_changes.outputs.has_changes == 'true'
-      run: |
-        echo "------------------------------------------------------------"
-        echo "This plugin may require additional configuration in your"
-        echo "Backstage app-config.yaml or environment variables."
-        echo
-        echo "Please review the plugin documentation and consult:"
-        echo " - Backstage Docs: https://backstage.io/docs"
-        echo " - RHDH Docs: https://access.redhat.com/documentation/en-us/red_hat_developer_hub/"
-        echo "------------------------------------------------------------"
+    # - name: ⚠️ Display Plugin Configuration Disclaimer
+    #   if: steps.check_changes.outputs.has_changes == 'true'
+    #   run: |
+    #     echo "------------------------------------------------------------"
+    #     echo "This plugin may require additional configuration in your"
+    #     echo "Backstage app-config.yaml or environment variables."
+    #     echo
+    #     echo "Please review the plugin documentation and consult:"
+    #     echo " - Backstage Docs: https://backstage.io/docs"
+    #     echo " - RHDH Docs: https://access.redhat.com/documentation/en-us/red_hat_developer_hub/"
+    #     echo "------------------------------------------------------------"
