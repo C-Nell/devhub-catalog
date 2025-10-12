@@ -14,6 +14,7 @@ on:
       - 'scripts/process-plugin.js'
       - 'package.json'
       - '.yarnrc.yml' 
+      - 'processed/.metadata.json'
 
   workflow_dispatch:
 
