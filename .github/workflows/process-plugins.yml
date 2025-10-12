@@ -192,7 +192,7 @@ jobs:
       with:
         repository: C-Nell/devhub-gitops
         ref: main  # Specify the branch here
-        token: ${{ secrets.PAT_TOKEN }}
+        token: ${{ secrets.GIT_TOKEN}}
         path: devhub-gitops
     # - name: 📝 Patch ConfigMap with updated plugin
     #   if: steps.check_changes.outputs.has_changes == 'true'
