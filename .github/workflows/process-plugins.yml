@@ -158,8 +158,7 @@ jobs:
     - name: 🔐 Login to OpenShift cluster
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
-        oc login --token=${{ secrets.OC_LOGIN_TOKEN }} --server=https://api.rm1.0a51.p1.openshiftapps.com:6443
-        oc project poteatc-dev
+        oc login --token=${{ secrets.OC_LOGIN_TOKEN }} --server=https://api.crc.testing:6443
 
     - name: 📤 Copy tarball to pod
       if: steps.check_changes.outputs.has_changes == 'true'
