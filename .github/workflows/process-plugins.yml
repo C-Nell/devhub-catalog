@@ -103,7 +103,6 @@ jobs:
     - name: 📦 Install dependencies (fresh each run)
       if: steps.check_changes.outputs.has_changes == 'true'
       run: node .yarn/releases/yarn-${YARN_VERSION}.cjs install --mode=skip-build --no-immutable
-
     - name: 🧩 Process plugins
       if: steps.check_changes.outputs.has_changes == 'true'
       id: process
@@ -111,11 +110,8 @@ jobs:
         set -euo pipefail
         mkdir -p processed
         
-        for dir in plugins/*; do
-          [ -d "$dir" ] || continue
-          name="$(basename "$dir")"
-          [[ "$name" == .* ]] && continue
-          
+        # Only process the plugins that need it
+        for name in ${{ steps.check_changes.outputs.plugins }}; do
           echo "=== Processing $name ==="
           node scripts/process-plugin.js "$name"
         done
