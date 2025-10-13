@@ -163,13 +163,6 @@ jobs:
           mv "$METADATA_FILE.tmp" "$METADATA_FILE"
         done
         
-        # Commit metadata
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add processed/.metadata.json
-        git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
-        git push
-
     - name: 🔐 Login to OpenShift cluster
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
@@ -263,7 +256,7 @@ jobs:
 
         echo "Updated $DYNAMIC_PLUGINS_YAML successfully."
 
-    - name: Commit and push changes
+    - name: Commit and push changes to repo
       run: |
         cd devhub-gitops
         git config user.name "github-actions[bot]"
@@ -271,6 +264,14 @@ jobs:
         git add core/dynamic-plugins.yaml
         git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
         git push origin main
+
+    - name: 💾 Commit plugin metadata
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add processed/.metadata.json
+        git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
+        git push
 
 
     # - name: ⚠️ Display Plugin Configuration Disclaimer
