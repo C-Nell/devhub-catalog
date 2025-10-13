@@ -189,51 +189,51 @@ jobs:
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         set -euo pipefail
-        
+
         echo "🔍 Scanning for .tgz files..."
-        
+
         ADDED=0
         UPDATED=0
-        
+
         # Scan for plugins in the catalog repo
         for file in devhub-catalog/processed/*.tgz; do
           [ -f "$file" ] || continue
-          
+
           filename=$(basename "$file")
           url="${SERVER_URL}/${filename}"
-          
+
           echo ""
           echo "📦 $filename"
-          
+
           # Calculate SHA-512 integrity hash
           integrity="sha512-$(sha512sum "$file" | awk '{print $1}' | xxd -r -p | base64)"
           echo "   🔒 Integrity: $integrity"
-          
+
           # Check if plugin exists in YAML
-          if yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null | grep -q .; then
-            # Plugin exists, check if integrity matches
-            existing_integrity=$(yq eval ".plugins[] | select(.package == \"$url\") | .integrity" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null)
-            
-            if [ "$existing_integrity" = "$integrity" ]; then
-              echo "   ✅ Already in YAML with correct integrity"
-            else
-              echo "   🔄 Updating integrity hash in YAML"
-              # Update the integrity for this plugin
-              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" \
+          existing_entry=$(yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null)
+
+          if [[ -n "$existing_entry" ]]; then
+            existing_integrity=$(echo "$existing_entry" | yq eval '.integrity' -)
+
+            if [[ -z "$existing_integrity" || "$existing_integrity" != "$integrity" ]]; then
+              echo "   🔄 Integrity changed or missing — overwriting entry"
+              yq eval "(.plugins[] | select(.package == \"$url\")) = {\"package\": \"$url\", \"integrity\": \"$integrity\", \"disabled\": false}" \
                 -i devhub-gitops/core/dynamic-plugins.yaml
               ((UPDATED++))
+            else
+              echo "   ✅ Already in YAML with correct integrity"
             fi
           else
-            # Add new plugin with proper formatting
             echo "   ➕ Adding to YAML"
             yq eval ".plugins += [{\"package\": \"$url\", \"integrity\": \"$integrity\", \"disabled\": false}]" \
               -i devhub-gitops/core/dynamic-plugins.yaml
             ((ADDED++))
           fi
         done
-        
+
         echo ""
         echo "✅ Added $ADDED new plugin(s), updated $UPDATED plugin(s)"
+
         
     - name: Show changes in GitOps repo
       if: steps.check_changes.outputs.has_changes == 'true'
