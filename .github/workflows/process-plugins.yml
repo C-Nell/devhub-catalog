@@ -162,126 +162,215 @@ jobs:
              "$METADATA_FILE" > "$METADATA_FILE.tmp"
           mv "$METADATA_FILE.tmp" "$METADATA_FILE"
         done
+
         
-    - name: 🔐 Login to OpenShift cluster
+
+    - name: 💾 Update and commit metadata (with debug)
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
-        oc login --token=${{ secrets.OC_LOGIN_TOKEN }} --server=https://api.rm1.0a51.p1.openshiftapps.com:6443
-
-    - name: 📤 Copy tarball to pod
-      if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        NS: poteatc-dev
-      run: |
-        set -euo pipefail
-        POD=$(oc -n "$NS" get pod -l name=httpd-example -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | awk '{print $1}')
-        if [ -z "$POD" ]; then
-          echo "No running pod found with label name=httpd-example in namespace $NS"
-          exit 1
+        # Enable bash debugging and error handling
+        set -euxo pipefail  # 'x' shows each command before executing
+        
+        METADATA_FILE="processed/.metadata.json"
+        
+        echo "::group::📋 Initial Setup"
+        echo "Working directory: $(pwd)"
+        echo "Metadata file path: $METADATA_FILE"
+        echo "Plugins directory contents:"
+        ls -la plugins/ || echo "No plugins directory"
+        echo "::endgroup::"
+        
+        # Initialize metadata if doesn't exist
+        if [ ! -f "$METADATA_FILE" ]; then
+          echo "::notice::Creating new metadata file"
+          mkdir -p "$(dirname "$METADATA_FILE")"
+          echo "{}" > "$METADATA_FILE"
+        else
+          echo "::group::📄 Existing Metadata"
+          cat "$METADATA_FILE"
+          echo "::endgroup::"
         fi
-        DEST=/opt/app-root/src
-        echo "Using pod: $POD"
-        echo "Dest: $DEST"
-
-        shopt -s nullglob
-        files=(processed/*.tgz)
-        if [ ${#files[@]} -eq 0 ]; then
-          echo "No .tgz files found in processed/"
-          exit 0
-        fi
-
-        for f in "${files[@]}"; do
-          echo "Copying $(basename "$f")"
-          oc -n "$NS" cp "$f" "$POD":"$DEST/"
-        done
-    - name: Update dynamic-plugins.yaml in repo
-      run: |
-        set -euo pipefail
-        cd devhub-gitops
-
-        # File path inside repo
-        DYNAMIC_PLUGINS_YAML="core/dynamic-plugins.yaml"
-
-        # Load existing YAML or create empty root if missing
-        if [ ! -f "$DYNAMIC_PLUGINS_YAML" ]; then
-          echo "Creating empty dynamic-plugins.yaml"
-          echo "plugins: []" > "$DYNAMIC_PLUGINS_YAML"
-        fi
-
-        # Array for new entries
-        new_entries=()
-
-        # Enable nullglob so no-match globbing gives empty list
-        shopt -s nullglob
-        for f in ../processed/*.tgz; do
-          filename=$(basename "$f")
-
-          # Calculate integrity hash
-          integrity="sha512-$(openssl dgst -sha512 -binary "$f" | openssl base64 -A)"
-          url="http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/$filename"
-
-          echo "Processing plugin $filename"
-          echo "URL: $url"
-          echo "Integrity: $integrity"
-
-          # Prepare YAML plugin entry string
-          entry="- package: \"$url\"
-        integrity: \"$integrity\"
-        disabled: false"
-
-          new_entries+=("$entry")
-        done
-
-        # If no tarballs found, exit early
-        if [ ${#new_entries[@]} -eq 0 ]; then
-          echo "No plugin tarballs found, skipping update."
-          exit 0
-        fi
-
-        # Remove existing entries with matching package URLs
-        # First, load all package URLs from new_entries for deletion
-        for entry in "${new_entries[@]}"; do
-          # Extract the package URL from the entry YAML block
-          pkg_url=$(echo "$entry" | grep '^ *- package:' | awk '{print $3}' | tr -d '"')
+        
+        echo "::group::🔍 Processing Plugins"
+        # Update metadata for all processed plugins
+        PLUGIN_COUNT=0
+        for dir in plugins/*; do
+          [ -d "$dir" ] || continue
+          name="$(basename "$dir")"
+          [[ "$name" == .* ]] && continue
           
-          # Delete entries matching this package URL from the plugins list
-          yq -i "del(.plugins[] | select(.package == \"$pkg_url\"))" "$DYNAMIC_PLUGINS_YAML"
+          echo "----------------------------------------"
+          echo "Processing plugin: $name"
+          
+          # Check if directory has any commits
+          if git log -1 --format="%H" -- "$dir" >/dev/null 2>&1; then
+            CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+            echo "  ✓ Found git hash: ${CURRENT_HASH:0:8}"
+          else
+            echo "  ⚠️  No git history for $dir, skipping"
+            continue
+          fi
+          
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "  ✓ Timestamp: $TIMESTAMP"
+          
+          # Show jq command before execution
+          echo "  ✓ Updating metadata..."
+          jq --arg plugin "$name" \
+            --arg hash "$CURRENT_HASH" \
+            --arg timestamp "$TIMESTAMP" \
+            '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
+            "$METADATA_FILE" > "$METADATA_FILE.tmp"
+          
+          # Verify the temp file was created
+          if [ -f "$METADATA_FILE.tmp" ]; then
+            echo "  ✓ Temp file created successfully"
+            mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+            echo "  ✓ Metadata updated for $name"
+          else
+            echo "  ✗ Failed to create temp file"
+            exit 1
+          fi
+          
+          ((PLUGIN_COUNT++))
         done
-
-        # Append new plugin entries to plugins list
-        for entry in "${new_entries[@]}"; do
-          # Use yq to add a new item under plugins
-          yq -i ".plugins += [$(echo "$entry" | yq eval -o=json -)]" "$DYNAMIC_PLUGINS_YAML"
-        done
-
-        echo "Updated $DYNAMIC_PLUGINS_YAML successfully."
-
-    - name: Commit and push changes to repo
+        echo "::endgroup::"
+        
+        echo "::group::📊 Final Results"
+        echo "Total plugins processed: $PLUGIN_COUNT"
+        echo ""
+        echo "Final metadata contents:"
+        cat "$METADATA_FILE"
+        echo ""
+        echo "Metadata file size: $(wc -c < "$METADATA_FILE") bytes"
+        echo "::endgroup::"
+        
+        # Set output for next steps
+        echo "plugin_count=$PLUGIN_COUNT" >> $GITHUB_OUTPUT
+    
+    # ============================================
+    # METHOD 2: Upload Artifacts for Inspection
+    # ============================================
+    - name: 📤 Upload metadata artifact
+      if: always()  # Run even if previous step fails
+      uses: actions/upload-artifact@v4
+      with:
+        name: metadata-debug
+        path: |
+          processed/.metadata.json
+          processed/.metadata.json.tmp
+        if-no-files-found: warn
+    
+    # ============================================
+    # METHOD 3: Create Debug Summary
+    # ============================================
+    - name: 📝 Generate Debug Summary
+      if: always()
       run: |
-        cd devhub-gitops
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add core/dynamic-plugins.yaml
-        git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
-        git push origin main
-
-    - name: 💾 Commit plugin metadata
+        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+        ## 🔍 Metadata Update Debug Report
+        
+        ### Environment Info
+        - **Runner OS**: ${{ runner.os }}
+        - **Workflow**: ${{ github.workflow }}
+        - **Run Number**: ${{ github.run_number }}
+        
+        ### File Status
+        EOF
+        
+        if [ -f "processed/.metadata.json" ]; then
+          echo "- ✅ Metadata file exists" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Metadata Contents" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat processed/.metadata.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ❌ Metadata file not found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Plugin Directories" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ls -la plugins/ 2>&1 || echo "No plugins directory" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+    
+    # ============================================
+    # METHOD 4: Show Git Status
+    # ============================================
+    - name: 🔍 Show Git Changes
+      if: always()
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add processed/.metadata.json
-        git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
-        git push
+        echo "::group::Git Status"
+        git status
+        echo "::endgroup::"
+        
+        echo "::group::Git Diff"
+        git diff processed/.metadata.json || echo "No changes or file doesn't exist"
+        echo "::endgroup::"
+
+  
 
 
-    # - name: ⚠️ Display Plugin Configuration Disclaimer
+    # - name: 🔐 Login to OpenShift cluster
     #   if: steps.check_changes.outputs.has_changes == 'true'
     #   run: |
-    #     echo "------------------------------------------------------------"
-    #     echo "This plugin may require additional configuration in your"
-    #     echo "Backstage app-config.yaml or environment variables."
-    #     echo
-    #     echo "Please review the plugin documentation and consult:"
-    #     echo " - Backstage Docs: https://backstage.io/docs"
-    #     echo " - RHDH Docs: https://access.redhat.com/documentation/en-us/red_hat_developer_hub/"
-    #     echo "------------------------------------------------------------"
+    #     oc login --token=${{ secrets.OC_LOGIN_TOKEN }} --server=https://api.rm1.0a51.p1.openshiftapps.com:6443
+
+    # - name: 📤 Copy tarball to pod
+    #   if: steps.check_changes.outputs.has_changes == 'true'
+    #   env:
+    #     NS: poteatc-dev
+    #   run: |
+    #     set -euo pipefail
+    #     POD=$(oc -n "$NS" get pod -l name=httpd-example -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | awk '{print $1}')
+    #     if [ -z "$POD" ]; then
+    #       echo "No running pod found with label name=httpd-example in namespace $NS"
+    #       exit 1
+    #     fi
+    #     DEST=/opt/app-root/src
+    #     echo "Using pod: $POD"
+    #     echo "Dest: $DEST"
+
+    #     shopt -s nullglob
+    #     files=(processed/*.tgz)
+    #     if [ ${#files[@]} -eq 0 ]; then
+    #       echo "No .tgz files found in processed/"
+    #       exit 0
+    #     fi
+
+    #     for f in "${files[@]}"; do
+    #       echo "Copying $(basename "$f")"
+    #       oc -n "$NS" cp "$f" "$POD":"$DEST/"
+    #     done
+
+        
+    # - name: Commit and push changes to repo
+    #   run: |
+    #     cd devhub-gitops
+    #     git config user.name "github-actions[bot]"
+    #     git config user.email "github-actions[bot]@users.noreply.github.com"
+    #     git add core/dynamic-plugins.yaml
+    #     git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
+    #     git push origin main
+
+    # - name: 💾 Commit plugin metadata
+    #   run: |
+    #     git config user.name "github-actions[bot]"
+    #     git config user.email "github-actions[bot]@users.noreply.github.com"
+    #     git add processed/.metadata.json
+    #     git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
+    #     git push
+
+
+    # # - name: ⚠️ Display Plugin Configuration Disclaimer
+    # #   if: steps.check_changes.outputs.has_changes == 'true'
+    # #   run: |
+    # #     echo "------------------------------------------------------------"
+    # #     echo "This plugin may require additional configuration in your"
+    # #     echo "Backstage app-config.yaml or environment variables."
+    # #     echo
+    # #     echo "Please review the plugin documentation and consult:"
+    # #     echo " - Backstage Docs: https://backstage.io/docs"
+    # #     echo " - RHDH Docs: https://access.redhat.com/documentation/en-us/red_hat_developer_hub/"
+    # #     echo "------------------------------------------------------------"
