@@ -207,11 +207,15 @@ jobs:
         cd devhub-gitops
         yq eval '.new_key = "new_value"' -i core/dynamic-plugins.yaml
 
-    - name: Commit and push changes
+    - name: Commit and push changes to devhub-gitops
       run: |
         cd devhub-gitops
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add core/dynamic-plugins.yaml
+        git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml via GitHub Actions"
+        git push origin main
+
 
 
     # - name: 📝 Patch ConfigMap with updated plugin
