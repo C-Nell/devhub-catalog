@@ -324,3 +324,29 @@ jobs:
           git commit -m "chore: update plugin processing metadata [skip ci]"
           git push origin HEAD
         fi
+
+    - name: 🔄 Restart RHDH deployment
+      env:
+        NS: poteatc-dev
+      run: |
+        set -euo pipefail
+        DEPLOY=$(oc -n "$NS" get deploy -o name | grep redhat-developer-hub || true)
+        if [ -z "$DEPLOY" ]; then
+          echo "❌ Could not find a deployment named redhat-developer-hub"
+          exit 1
+        fi
+
+        echo "🔄 Restarting $DEPLOY in $NS"
+        oc -n "$NS" rollout restart "$DEPLOY"
+        echo "🚀 Rollout triggered, not waiting for completion."
+
+    - name: ⚠️ Display Plugin Configuration Disclaimer
+      run: |
+        echo "------------------------------------------------------------"
+        echo "This plugin may require additional configuration in your"
+        echo "Backstage app-config.yaml or environment variables."
+        echo
+        echo "Please review the plugin documentation and consult:"
+        echo " - Backstage Docs: https://backstage.io/docs"
+        echo " - RHDH Docs: https://access.redhat.com/documentation/en-us/red_hat_developer_hub/"
+        echo "------------------------------------------------------------"
