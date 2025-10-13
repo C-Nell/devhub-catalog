@@ -109,17 +109,23 @@ jobs:
       id: process
       run: |
         set -euo pipefail
-        mkdir -p processed
+        
+        METADATA_FILE="processed/.metadata.json"
         
         for dir in plugins/*; do
           [ -d "$dir" ] || continue
           name="$(basename "$dir")"
           [[ "$name" == .* ]] && continue
           
+          # Check if plugin exists in metadata (only if file exists)
+          if [ -f "$METADATA_FILE" ] && jq -e --arg plugin "$name" '.[$plugin]' "$METADATA_FILE" > /dev/null 2>&1; then
+            echo "⊘ Plugin '$name' already in metadata - skipping"
+            continue
+          fi
+          
           echo "=== Processing $name ==="
           node scripts/process-plugin.js "$name"
         done
-
 
     - name: 💾 Update and commit metadata
       if: steps.check_changes.outputs.has_changes == 'true'
