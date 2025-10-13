@@ -149,57 +149,6 @@ jobs:
           node scripts/process-plugin.js "$name"
         done
 
-    - name: 💾 Update metadata in file
-      if: steps.check_changes.outputs.has_changes == 'true'
-      working-directory: devhub-catalog
-      run: |
-        set -euo pipefail
-        
-        METADATA_FILE="processed/.metadata.json"
-        
-        # Initialize metadata if doesn't exist
-        if [ ! -f "$METADATA_FILE" ]; then
-          mkdir -p processed
-          echo "{}" > "$METADATA_FILE"
-        fi
-        
-        echo "📋 Current metadata before update:"
-        cat "$METADATA_FILE"
-        echo ""
-        
-        # Update metadata for all processed plugins
-        for dir in plugins/*; do
-          [ -d "$dir" ] || continue
-          name="$(basename "$dir")"
-          [[ "$name" == .* ]] && continue
-          
-          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
-          
-          echo "Updating plugin: $name with hash: $CURRENT_HASH"
-          
-          # Update metadata
-          jq --arg plugin "$name" \
-             --arg hash "$CURRENT_HASH" \
-             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-             '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
-             "$METADATA_FILE" > "$METADATA_FILE.tmp"
-          
-          # Verify the tmp file was created and has content
-          if [ ! -s "$METADATA_FILE.tmp" ]; then
-            echo "❌ Error: temp file is empty or doesn't exist!"
-            exit 1
-          fi
-          
-          # Move temp file to actual file
-          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
-          
-          echo "✓ Updated metadata for '$name'"
-        done
-        
-        echo ""
-        echo "📋 Final metadata after update:"
-        cat "$METADATA_FILE"
-
     - name: 🔐 Login to OpenShift cluster
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
@@ -284,7 +233,70 @@ jobs:
         git add core/dynamic-plugins.yaml
         git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
         git push origin main
-    
+
+    - name: 💾 Update metadata in file
+      if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
+      run: |
+        set -euo pipefail
+        
+        METADATA_FILE="processed/.metadata.json"
+        
+        # Ensure directory exists
+        mkdir -p processed
+        
+        # Initialize or fix metadata file if it doesn't exist or is empty/invalid
+        if [ ! -f "$METADATA_FILE" ] || [ ! -s "$METADATA_FILE" ]; then
+          echo "Initializing empty metadata file"
+          echo "{}" > "$METADATA_FILE"
+        else
+          # Verify it's valid JSON, if not reinitialize
+          if ! jq empty "$METADATA_FILE" 2>/dev/null; then
+            echo "Metadata file has invalid JSON, reinitializing"
+            echo "{}" > "$METADATA_FILE"
+          fi
+        fi
+        
+        echo "📋 Current metadata before update:"
+        cat "$METADATA_FILE"
+        echo ""
+        
+        # Update metadata for all processed plugins
+        for dir in plugins/*; do
+          [ -d "$dir" ] || continue
+          name="$(basename "$dir")"
+          [[ "$name" == .* ]] && continue
+          
+          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+          
+          echo "Updating plugin: $name with hash: $CURRENT_HASH"
+          
+          # Update metadata
+          jq --arg plugin "$name" \
+            --arg hash "$CURRENT_HASH" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
+            "$METADATA_FILE" > "$METADATA_FILE.tmp"
+          
+          # Verify the tmp file was created and has content
+          if [ ! -s "$METADATA_FILE.tmp" ]; then
+            echo "❌ Error: temp file is empty or doesn't exist!"
+            echo "Metadata file content:"
+            cat "$METADATA_FILE"
+            echo "jq command failed"
+            exit 1
+          fi
+          
+          # Move temp file to actual file
+          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+          
+          echo "✓ Updated metadata for '$name'"
+        done
+        
+        echo ""
+        echo "📋 Final metadata after update:"
+        cat "$METADATA_FILE"        
+
     - name: Commit metadata to current repo
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
