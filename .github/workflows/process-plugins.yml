@@ -43,7 +43,7 @@ jobs:
         token: ${{ secrets.GIT_TOKEN}}
         path: devhub-gitops 
         
-    - name: 🔍 Check if plugins changed
+    - name: 🔍 Check if plugins in folder need processing
       id: check_changes
       working-directory: devhub-catalog
       run: |
