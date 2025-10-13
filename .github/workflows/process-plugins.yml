@@ -204,14 +204,18 @@ jobs:
           echo ""
           echo "📦 $filename"
           
+          # Calculate SHA-512 integrity hash
+          integrity="sha512-$(sha512sum "$file" | awk '{print $1}' | xxd -r -p | base64)"
+          echo "   🔒 Integrity: $integrity"
+          
           # Check if exists in GitOps repo YAML
           if yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null | grep -q .; then
             echo "   ⚠️  Already in YAML"
           else
-            # Add to GitOps repo YAML
-            yq eval ".plugins += [{\"package\": \"$url\", \"disabled\": false}]" \
+            # Add to GitOps repo YAML with integrity hash
+            yq eval ".plugins += [{\"package\": \"$url\", \"disabled\": false, \"integrity\": \"$integrity\"}]" \
               -i devhub-gitops/core/dynamic-plugins.yaml
-            echo "   ✅ Added to YAML"
+            echo "   ✅ Added to YAML with integrity hash"
             ADDED=$((ADDED + 1))
           fi
         done
