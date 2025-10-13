@@ -192,8 +192,16 @@ jobs:
         
         echo "🔍 Scanning for .tgz files..."
         
+        YAML_FILE="devhub-gitops/core/dynamic-plugins.yaml"
         ADDED=0
         UPDATED=0
+        
+        # Backup the original file
+        cp "$YAML_FILE" "${YAML_FILE}.backup"
+        
+        echo "📋 Original YAML:"
+        cat "$YAML_FILE"
+        echo ""
         
         # Scan for plugins in the catalog repo
         for file in devhub-catalog/processed/*.tgz; do
@@ -205,44 +213,58 @@ jobs:
           echo ""
           echo "📦 $filename"
           
-          # Calculate SHA-512 integrity hash (ensure single line with -w0)
+          # Calculate SHA-512 integrity hash (single line with -w0)
           integrity="sha512-$(sha512sum "$file" | awk '{print $1}' | xxd -r -p | base64 -w0)"
           echo "   🔒 Integrity: $integrity"
           
-          # Check if plugin exists in YAML
-          if yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null | grep -q .; then
-            # Plugin exists, check if integrity matches
-            existing_integrity=$(yq eval ".plugins[] | select(.package == \"$url\") | .integrity" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null)
+          # Check if plugin with this URL already exists (count matches)
+          match_count=$(yq eval "[.plugins[] | select(.package == \"$url\")] | length" "$YAML_FILE" 2>/dev/null || echo "0")
+          
+          if [ "$match_count" -gt 0 ]; then
+            # Plugin exists, check integrity
+            existing_integrity=$(yq eval ".plugins[] | select(.package == \"$url\") | .integrity" "$YAML_FILE" 2>/dev/null)
             
             if [ "$existing_integrity" = "$integrity" ]; then
               echo "   ✅ Already in YAML with correct integrity"
+            elif [ "$existing_integrity" = "null" ] || [ -z "$existing_integrity" ]; then
+              echo "   🔄 Adding missing integrity hash"
+              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" -i "$YAML_FILE"
+              UPDATED=$((UPDATED + 1))
             else
-              echo "   🔄 Updating integrity hash in YAML"
-              # Update the integrity for this plugin
-              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" \
-                -i devhub-gitops/core/dynamic-plugins.yaml
+              echo "   🔄 Updating integrity hash"
+              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" -i "$YAML_FILE"
               UPDATED=$((UPDATED + 1))
             fi
           else
-            # Add new plugin with proper formatting
+            # Plugin doesn't exist, add it using JSON format (safer)
             echo "   ➕ Adding to YAML"
             
-            # Initialize plugins array if it doesn't exist
-            if ! yq eval '.plugins' devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null | grep -q .; then
-              yq eval '.plugins = []' -i devhub-gitops/core/dynamic-plugins.yaml
+            # Ensure plugins array exists
+            if ! yq eval 'has("plugins")' "$YAML_FILE" 2>/dev/null | grep -q true; then
+              yq eval '.plugins = []' -i "$YAML_FILE"
             fi
             
-            # Add the plugin
+            # Add new plugin using JSON input (more reliable)
             yq eval ".plugins += [{\"package\": \"$url\", \"integrity\": \"$integrity\", \"disabled\": false}]" \
-              -i devhub-gitops/core/dynamic-plugins.yaml
+              -i "$YAML_FILE"
             ADDED=$((ADDED + 1))
           fi
         done
         
         echo ""
+        echo "📋 Updated YAML:"
+        cat "$YAML_FILE"
+        echo ""
         echo "✅ Added $ADDED new plugin(s), updated $UPDATED plugin(s)"
-
         
+        # Show diff
+        echo ""
+        echo "📝 Changes made:"
+        diff "${YAML_FILE}.backup" "$YAML_FILE" || true
+        
+        # Remove backup
+        rm -f "${YAML_FILE}.backup"
+            
     - name: Show changes in GitOps repo
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
