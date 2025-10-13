@@ -112,6 +112,13 @@ jobs:
       with:
         node-version: 20
 
+    - name: 🛠️ Install yq
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+        yq --version
+
     - name: 📦 Install dependencies (fresh each run)
       if: steps.check_changes.outputs.has_changes == 'true'
       working-directory: devhub-catalog
@@ -204,9 +211,12 @@ jobs:
         done
 
     - name: Update dynamic-plugins.yaml
+      if: steps.check_changes.outputs.has_changes == 'true'
       env:
-        SERVER_URL: https://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/
+        SERVER_URL: https://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
       run: |
+        set -euo pipefail
+        
         echo "🔍 Scanning for .tgz files..."
         
         ADDED=0
@@ -216,20 +226,20 @@ jobs:
           [ -f "$file" ] || continue
           
           filename=$(basename "$file")
-          url="$SERVER_URL/$filename"
+          url="${SERVER_URL}/${filename}"
           
           echo ""
           echo "📦 $filename"
           
           # Check if exists in GitOps repo YAML
-          if yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml | grep -q .; then
+          if yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null | grep -q .; then
             echo "   ⚠️  Already in YAML"
           else
             # Add to GitOps repo YAML
             yq eval ".plugins += [{\"package\": \"$url\", \"disabled\": false}]" \
               -i devhub-gitops/core/dynamic-plugins.yaml
             echo "   ✅ Added to YAML"
-            ((ADDED++))
+            ADDED=$((ADDED + 1))
           fi
         done
         
@@ -237,6 +247,7 @@ jobs:
         echo "✅ Added $ADDED new plugin(s)"
     
     - name: Show changes in GitOps repo
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd devhub-gitops
         echo "::group::📝 Changes to dynamic-plugins.yaml"
@@ -244,6 +255,7 @@ jobs:
         echo "::endgroup::"
     
     - name: Commit and push to GitOps repo
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd devhub-gitops
         git config user.name "github-actions[bot]"
@@ -253,6 +265,9 @@ jobs:
         git push origin main
     
     - name: Update plugin metadata in current repo
+      if: steps.check_changes.outputs.has_changes == 'true'
+      env:
+        SERVER_URL: https://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
       run: |
         cd devhub-catalog
         
@@ -273,7 +288,7 @@ jobs:
           
           # Update metadata
           jq --arg plugin "$plugin_name" \
-              --arg url "$SERVER_URL/$filename" \
+              --arg url "${SERVER_URL}/${filename}" \
               --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
               '.[$plugin] = {url: $url, timestamp: $timestamp}' \
               "$METADATA_FILE" > "$METADATA_FILE.tmp"
@@ -281,6 +296,7 @@ jobs:
         done
     
     - name: Commit metadata to current repo
+      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd devhub-catalog
         git config user.name "github-actions[bot]"
