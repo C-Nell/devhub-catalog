@@ -65,7 +65,7 @@ jobs:
           STORED_HASH=$(jq -r --arg plugin "$name" '.[$plugin].hash // "none"' "$METADATA_FILE")
           
           if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
-            echo "✓ Plugin '$name' has changed"
+            echo "✓ Plugin '$name' needs processing"
             HAS_CHANGES=true
             break
           fi
