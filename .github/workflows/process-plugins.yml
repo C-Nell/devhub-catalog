@@ -32,6 +32,13 @@ jobs:
         fetch-depth: 0 # Required for pushing changes back
         token: ${{ secrets.GIT_TOKEN }}
 
+    - name: Checkout target repository
+      uses: actions/checkout@v4
+      with:
+        repository: C-Nell/devhub-gitops
+        ref: main  # Specify the branch here
+        token: ${{ secrets.GIT_TOKEN}}
+        path: devhub-gitops        
     - name: 🔍 Check if plugins changed
       id: check_changes
       run: |
@@ -193,13 +200,8 @@ jobs:
           echo "Copying $(basename "$f")"
           oc -n "$NS" cp "$f" "$POD":"$DEST/"
         done
-    - name: Checkout target repository
-      uses: actions/checkout@v4
-      with:
-        repository: C-Nell/devhub-gitops
-        ref: main  # Specify the branch here
-        token: ${{ secrets.GIT_TOKEN}}
-        path: devhub-gitops
+
+      
     # - name: 📝 Patch ConfigMap with updated plugin
     #   if: steps.check_changes.outputs.has_changes == 'true'
     #   env:
