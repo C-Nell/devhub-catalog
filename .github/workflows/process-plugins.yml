@@ -245,13 +245,13 @@ jobs:
             fi
           else
             echo "   ➕ Adding new plugin to YAML"
-            yq e -i "
-              .plugins += [{
-                \"package\": \"$url\",
-                \"integrity\": \"$integrity\",
-                \"disabled\": false
+            yq e -i '
+              (.plugins // []) += [{
+                "package": "'"$url"'",
+                "integrity": "'"$integrity"'",
+                "disabled": false
               }]
-            " "$YAML_FILE"
+            ' "$YAML_FILE"
             ((ADDED++))
           fi
         done
