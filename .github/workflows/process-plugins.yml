@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       npm_config_nodedir: /usr
+      SERVER_URL: https://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
 
     steps:
     - name: 📥 Checkout repository
@@ -212,8 +213,6 @@ jobs:
 
     - name: Update dynamic-plugins.yaml
       if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        SERVER_URL: https://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
       run: |
         set -euo pipefail
         
@@ -263,37 +262,6 @@ jobs:
         git add core/dynamic-plugins.yaml
         git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
         git push origin main
-    
-    - name: Update plugin metadata in current repo
-      if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        SERVER_URL: https://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
-      run: |
-        cd devhub-catalog
-        
-        METADATA_FILE="processed/.metadata.json"
-        
-        # Initialize if doesn't exist
-        if [ ! -f "$METADATA_FILE" ]; then
-          mkdir -p processed
-          echo "{}" > "$METADATA_FILE"
-        fi
-        
-        # Update metadata for processed plugins
-        for file in processed/*.tgz; do
-          [ -f "$file" ] || continue
-          
-          filename=$(basename "$file")
-          plugin_name="${filename%.tgz}"
-          
-          # Update metadata
-          jq --arg plugin "$plugin_name" \
-              --arg url "${SERVER_URL}/${filename}" \
-              --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              '.[$plugin] = {url: $url, timestamp: $timestamp}' \
-              "$METADATA_FILE" > "$METADATA_FILE.tmp"
-          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
-        done
     
     - name: Commit metadata to current repo
       if: steps.check_changes.outputs.has_changes == 'true'
