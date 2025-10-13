@@ -159,8 +159,13 @@ jobs:
         
         # Initialize metadata if doesn't exist
         if [ ! -f "$METADATA_FILE" ]; then
+          mkdir -p processed
           echo "{}" > "$METADATA_FILE"
         fi
+        
+        echo "📋 Current metadata before update:"
+        cat "$METADATA_FILE"
+        echo ""
         
         # Update metadata for all processed plugins
         for dir in plugins/*; do
@@ -170,13 +175,30 @@ jobs:
           
           CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
           
+          echo "Updating plugin: $name with hash: $CURRENT_HASH"
+          
+          # Update metadata
           jq --arg plugin "$name" \
              --arg hash "$CURRENT_HASH" \
              --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
              '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
              "$METADATA_FILE" > "$METADATA_FILE.tmp"
+          
+          # Verify the tmp file was created and has content
+          if [ ! -s "$METADATA_FILE.tmp" ]; then
+            echo "❌ Error: temp file is empty or doesn't exist!"
+            exit 1
+          fi
+          
+          # Move temp file to actual file
           mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+          
+          echo "✓ Updated metadata for '$name'"
         done
+        
+        echo ""
+        echo "📋 Final metadata after update:"
+        cat "$METADATA_FILE"
 
     - name: 🔐 Login to OpenShift cluster
       if: steps.check_changes.outputs.has_changes == 'true'
@@ -267,8 +289,23 @@ jobs:
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         cd devhub-catalog
+        
+        echo "📋 Metadata content before commit:"
+        cat processed/.metadata.json
+        echo ""
+        
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add processed/.metadata.json
-        git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
-        git push origin HEAD
+        
+        echo "📝 Git status:"
+        git status
+        echo ""
+        
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          echo "Committing changes..."
+          git commit -m "chore: update plugin processing metadata [skip ci]"
+          git push origin HEAD
+        fi
