@@ -32,13 +32,14 @@ jobs:
         fetch-depth: 0 # Required for pushing changes back
         token: ${{ secrets.GIT_TOKEN }}
 
-    - name: Checkout target repository
+    - name: 📥 Checkout target repository
       uses: actions/checkout@v4
       with:
         repository: C-Nell/devhub-gitops
         ref: main  # Specify the branch here
         token: ${{ secrets.GIT_TOKEN}}
-        path: devhub-gitops        
+        path: devhub-gitops 
+        
     - name: 🔍 Check if plugins changed
       id: check_changes
       run: |
@@ -201,7 +202,18 @@ jobs:
           oc -n "$NS" cp "$f" "$POD":"$DEST/"
         done
 
-      
+    - name: ➕ Add new top-level key to YAML
+      run: |
+        cd devhub-gitops
+        yq eval '.new_key = "new_value"' -i core/dynamic-plugins.yaml
+
+    - name: Commit and push changes
+      run: |
+        cd devhub-gitops
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+
     # - name: 📝 Patch ConfigMap with updated plugin
     #   if: steps.check_changes.outputs.has_changes == 'true'
     #   env:
@@ -256,21 +268,6 @@ jobs:
 
     #     echo "✅ ConfigMap updated successfully."
 
-    # - name: 🔄 Restart RHDH deployment
-    #   if: steps.check_changes.outputs.has_changes == 'true'
-    #   env:
-    #     NS: poteatc-dev
-    #   run: |
-    #     set -euo pipefail
-    #     DEPLOY=$(oc -n "$NS" get deploy -o name | grep redhat-developer-hub || true)
-    #     if [ -z "$DEPLOY" ]; then
-    #       echo "❌ Could not find a deployment named redhat-developer-hub"
-    #       exit 1
-    #     fi
-
-    #     echo "🔄 Restarting $DEPLOY in $NS"
-    #     oc -n "$NS" rollout restart "$DEPLOY"
-    #     echo "🚀 Rollout triggered, not waiting for completion."
 
     # - name: ⚠️ Display Plugin Configuration Disclaimer
     #   if: steps.check_changes.outputs.has_changes == 'true'
