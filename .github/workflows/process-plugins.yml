@@ -15,6 +15,7 @@ on:
       - 'package.json'
       - '.yarnrc.yml' 
       - 'processed/.metadata.json'
+      - '.github/workflows/process-plugins.yml'
 
   workflow_dispatch:
 
@@ -29,19 +30,21 @@ jobs:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Required for pushing changes back
+        fetch-depth: 0
         token: ${{ secrets.GIT_TOKEN }}
+        path: devhub-catalog
 
     - name: 📥 Checkout target repository
       uses: actions/checkout@v4
       with:
         repository: C-Nell/devhub-gitops
-        ref: main  # Specify the branch here
+        ref: main
         token: ${{ secrets.GIT_TOKEN}}
         path: devhub-gitops 
         
     - name: 🔍 Check if plugins changed
       id: check_changes
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
         
@@ -80,6 +83,7 @@ jobs:
     - name: 🔍 Get Yarn version
       if: steps.check_changes.outputs.has_changes == 'true'
       id: yarn-version
+      working-directory: devhub-catalog
       run: |
         file=$(ls .yarn/releases/yarn-*.cjs | head -n 1)
         version=$(basename "$file" | sed -E 's/^yarn-([0-9]+\.[0-9]+\.[0-9]+)\.cjs$/\1/')
@@ -110,11 +114,13 @@ jobs:
 
     - name: 📦 Install dependencies (fresh each run)
       if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
       run: node .yarn/releases/yarn-${YARN_VERSION}.cjs install --mode=skip-build --no-immutable
 
     - name: 🧩 Process plugins
       if: steps.check_changes.outputs.has_changes == 'true'
       id: process
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
         
@@ -137,6 +143,7 @@ jobs:
 
     - name: 💾 Update metadata in file
       if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
         
@@ -170,6 +177,7 @@ jobs:
 
     - name: 📤 Copy tarball to pod
       if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
       env:
         NS: poteatc-dev
       run: |
@@ -278,18 +286,3 @@ jobs:
         git add processed/.metadata.json
         git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
         git push
-      
-        
-  
-
-    # # - name: ⚠️ Display Plugin Configuration Disclaimer
-    # #   if: steps.check_changes.outputs.has_changes == 'true'
-    # #   run: |
-    # #     echo "------------------------------------------------------------"
-    # #     echo "This plugin may require additional configuration in your"
-    # #     echo "Backstage app-config.yaml or environment variables."
-    # #     echo
-    # #     echo "Please review the plugin documentation and consult:"
-    # #     echo " - Backstage Docs: https://backstage.io/docs"
-    # #     echo " - RHDH Docs: https://access.redhat.com/documentation/en-us/red_hat_developer_hub/"
-    # #     echo "------------------------------------------------------------"
