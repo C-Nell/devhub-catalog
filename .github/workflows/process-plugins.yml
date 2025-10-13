@@ -60,6 +60,7 @@ jobs:
         
         HAS_CHANGES=false
         
+        echo "🔍 Checking which plugins need processing..."
         for dir in plugins/*; do
           [ -d "$dir" ] || continue
           name="$(basename "$dir")"
@@ -69,9 +70,11 @@ jobs:
           STORED_HASH=$(jq -r --arg plugin "$name" '.[$plugin].hash // "none"' "$METADATA_FILE")
           
           if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
-            echo "✓ Plugin '$name' needs processing"
+            echo "✓ Plugin '$name' needs processing (current: $CURRENT_HASH, stored: $STORED_HASH)"
             HAS_CHANGES=true
-            break
+            # Don't break - keep checking all plugins
+          else
+            echo "  Plugin '$name' is up to date"
           fi
         done
         
@@ -80,7 +83,7 @@ jobs:
         fi
         
         echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
-
+        
     - name: 🔍 Get Yarn version
       if: steps.check_changes.outputs.has_changes == 'true'
       id: yarn-version
