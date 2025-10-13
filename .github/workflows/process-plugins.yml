@@ -193,6 +193,7 @@ jobs:
         echo "🔍 Scanning for .tgz files..."
         
         ADDED=0
+        UPDATED=0
         
         # Scan for plugins in the catalog repo
         for file in devhub-catalog/processed/*.tgz; do
@@ -208,21 +209,32 @@ jobs:
           integrity="sha512-$(sha512sum "$file" | awk '{print $1}' | xxd -r -p | base64)"
           echo "   🔒 Integrity: $integrity"
           
-          # Check if exists in GitOps repo YAML
+          # Check if plugin exists in YAML
           if yq eval ".plugins[] | select(.package == \"$url\")" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null | grep -q .; then
-            echo "   ⚠️  Already in YAML"
+            # Plugin exists, check if integrity matches
+            existing_integrity=$(yq eval ".plugins[] | select(.package == \"$url\") | .integrity" devhub-gitops/core/dynamic-plugins.yaml 2>/dev/null)
+            
+            if [ "$existing_integrity" = "$integrity" ]; then
+              echo "   ✅ Already in YAML with correct integrity"
+            else
+              echo "   🔄 Updating integrity hash in YAML"
+              # Update the integrity for this plugin
+              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" \
+                -i devhub-gitops/core/dynamic-plugins.yaml
+              ((UPDATED++))
+            fi
           else
-            # Add to GitOps repo YAML with integrity hash
-            yq eval ".plugins += [{\"package\": \"$url\", \"disabled\": false, \"integrity\": \"$integrity\"}]" \
+            # Add new plugin with proper formatting
+            echo "   ➕ Adding to YAML"
+            yq eval ".plugins += [{\"package\": \"$url\", \"integrity\": \"$integrity\", \"disabled\": false}]" \
               -i devhub-gitops/core/dynamic-plugins.yaml
-            echo "   ✅ Added to YAML with integrity hash"
-            ADDED=$((ADDED + 1))
+            ((ADDED++))
           fi
         done
         
         echo ""
-        echo "✅ Added $ADDED new plugin(s)"
-    
+        echo "✅ Added $ADDED new plugin(s), updated $UPDATED plugin(s)"
+        
     - name: Show changes in GitOps repo
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
