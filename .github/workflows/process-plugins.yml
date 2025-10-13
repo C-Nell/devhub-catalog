@@ -135,33 +135,33 @@ jobs:
           node scripts/process-plugin.js "$name"
         done
 
-    # - name: 💾 Update and commit metadata
-    #   if: steps.check_changes.outputs.has_changes == 'true'
-    #   run: |
-    #     set -euo pipefail
+    - name: 💾 Update metadata in file
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        set -euo pipefail
         
-    #     METADATA_FILE="processed/.metadata.json"
+        METADATA_FILE="processed/.metadata.json"
         
-    #     # Initialize metadata if doesn't exist
-    #     if [ ! -f "$METADATA_FILE" ]; then
-    #       echo "{}" > "$METADATA_FILE"
-    #     fi
+        # Initialize metadata if doesn't exist
+        if [ ! -f "$METADATA_FILE" ]; then
+          echo "{}" > "$METADATA_FILE"
+        fi
         
-    #     # Update metadata for all processed plugins
-    #     for dir in plugins/*; do
-    #       [ -d "$dir" ] || continue
-    #       name="$(basename "$dir")"
-    #       [[ "$name" == .* ]] && continue
+        # Update metadata for all processed plugins
+        for dir in plugins/*; do
+          [ -d "$dir" ] || continue
+          name="$(basename "$dir")"
+          [[ "$name" == .* ]] && continue
           
-    #       CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
           
-    #       jq --arg plugin "$name" \
-    #          --arg hash "$CURRENT_HASH" \
-    #          --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    #          '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
-    #          "$METADATA_FILE" > "$METADATA_FILE.tmp"
-    #       mv "$METADATA_FILE.tmp" "$METADATA_FILE"
-    #     done
+          jq --arg plugin "$name" \
+             --arg hash "$CURRENT_HASH" \
+             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+             '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
+             "$METADATA_FILE" > "$METADATA_FILE.tmp"
+          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+        done
 
     - name: 🔐 Login to OpenShift cluster
       if: steps.check_changes.outputs.has_changes == 'true'
