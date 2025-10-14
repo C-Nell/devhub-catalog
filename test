@@ -1,0 +1,82 @@
+# .github/workflows/rollout-rhdh.yml
+name: Rollout RHDH in Namespace
+
+on:
+  push:
+    branches:
+      - main                # Maps to sssd-rhdh-prod
+      - sssd-rhdh-dev
+      - sssd-rhdh-sbx
+      - tio-rhdh
+    paths:
+      - 'config/**'
+      - 'app-config/**'
+      - 'dynamic-plugins/**'
+
+jobs:
+  rollout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set namespace from branch
+        id: namespace
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          
+          # Special mapping: main -> sssd-rhdh-prod
+          if [ "$BRANCH" == "main" ]; then
+            NAMESPACE="sssd-rhdh-prod"
+          else
+            # All other branches use their name as the namespace
+            NAMESPACE="$BRANCH"
+          fi
+          
+          echo "namespace=$NAMESPACE" >> $GITHUB_OUTPUT
+          echo "🎯 Branch: $BRANCH → Namespace: $NAMESPACE"
+      
+      - name: Install OpenShift CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+      
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OC_TOKEN }} \
+                   --server=${{ secrets.OC_SERVER }} \
+                   --insecure-skip-tls-verify
+      
+      - name: Wait for ArgoCD sync (optional)
+        run: |
+          echo "⏳ Waiting 30 seconds for ArgoCD to sync changes..."
+          sleep 30
+      
+      - name: Trigger rollout restart
+        run: |
+          NAMESPACE="${{ steps.namespace.outputs.namespace }}"
+          
+          echo "🔄 Triggering rollout restart in $NAMESPACE..."
+          oc rollout restart deployment/backstage -n $NAMESPACE
+      
+      - name: Wait for rollout to complete
+        run: |
+          NAMESPACE="${{ steps.namespace.outputs.namespace }}"
+          
+          echo "⏳ Waiting for rollout to complete..."
+          oc rollout status deployment/backstage -n $NAMESPACE --timeout=5m
+          
+          echo "✅ Rollout completed successfully!"
+      
+      - name: Deployment Summary
+        run: |
+          NAMESPACE="${{ steps.namespace.outputs.namespace }}"
+          
+          echo "## 🚀 Rollout Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Namespace:** \`$NAMESPACE\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pod Status" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          oc get pods -n $NAMESPACE -l app=backstage >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
