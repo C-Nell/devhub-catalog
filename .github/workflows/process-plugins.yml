@@ -322,12 +322,14 @@ jobs:
           if [ -f "$PACKAGE_JSON" ]; then
             VERSION=$(jq -r '.version // "unknown"' "$PACKAGE_JSON")
             ROLE=$(jq -r '.backstage.role // "unknown"' "$PACKAGE_JSON")
+            PLUGIN_ID=$(jq -r '.backstage.pluginId // "unknown"' "$PACKAGE_JSON")
             PLUGIN_NAME=$(jq -r '.name // "unknown"' "$PACKAGE_JSON")
             
             echo "Updating plugin: $name"
             echo "  Package name: $PLUGIN_NAME"
             echo "  Version: $VERSION"
             echo "  Role: $ROLE"
+            echo "  Plugin Id: $PLUGIN_ID"
             echo "  Hash: $CURRENT_HASH"
           else
             echo "⚠️  No package.json found for $name, using defaults"
@@ -341,6 +343,7 @@ jobs:
             --arg hash "$CURRENT_HASH" \
             --arg version "$VERSION" \
             --arg role "$ROLE" \
+            -- arg plugin_id "$PLUGIN_ID" \
             --arg package_name "$PLUGIN_NAME" \
             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '.[$plugin] = {
