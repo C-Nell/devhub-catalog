@@ -282,7 +282,6 @@ jobs:
         git add core/dynamic-plugins.yaml
         git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
         git push origin main
-
     - name: 💾 Update metadata in file
       if: steps.check_changes.outputs.has_changes == 'true'
       working-directory: devhub-catalog
@@ -318,13 +317,39 @@ jobs:
           
           CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
           
-          echo "Updating plugin: $name with hash: $CURRENT_HASH"
+          # Extract version and role from package.json
+          PACKAGE_JSON="$dir/package.json"
+          if [ -f "$PACKAGE_JSON" ]; then
+            VERSION=$(jq -r '.version // "unknown"' "$PACKAGE_JSON")
+            ROLE=$(jq -r '.backstage.role // "unknown"' "$PACKAGE_JSON")
+            PLUGIN_NAME=$(jq -r '.name // "unknown"' "$PACKAGE_JSON")
+            
+            echo "Updating plugin: $name"
+            echo "  Package name: $PLUGIN_NAME"
+            echo "  Version: $VERSION"
+            echo "  Role: $ROLE"
+            echo "  Hash: $CURRENT_HASH"
+          else
+            echo "⚠️  No package.json found for $name, using defaults"
+            VERSION="unknown"
+            ROLE="unknown"
+            PLUGIN_NAME="unknown"
+          fi
           
-          # Update metadata
+          # Update metadata with all fields
           jq --arg plugin "$name" \
             --arg hash "$CURRENT_HASH" \
+            --arg version "$VERSION" \
+            --arg role "$ROLE" \
+            --arg package_name "$PLUGIN_NAME" \
             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
+            '.[$plugin] = {
+              hash: $hash, 
+              version: $version, 
+              role: $role, 
+              packageName: $package_name,
+              timestamp: $timestamp
+            }' \
             "$METADATA_FILE" > "$METADATA_FILE.tmp"
           
           # Verify the tmp file was created and has content
@@ -340,11 +365,12 @@ jobs:
           mv "$METADATA_FILE.tmp" "$METADATA_FILE"
           
           echo "✓ Updated metadata for '$name'"
+          echo ""
         done
         
         echo ""
         echo "📋 Final metadata after update:"
-        cat "$METADATA_FILE"        
+        cat "$METADATA_FILE"     
 
     - name: Commit metadata to current repo
       if: steps.check_changes.outputs.has_changes == 'true'
