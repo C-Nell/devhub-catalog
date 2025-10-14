@@ -343,7 +343,7 @@ jobs:
             --arg hash "$CURRENT_HASH" \
             --arg version "$VERSION" \
             --arg role "$ROLE" \
-            -- arg plugin_id "$PLUGIN_ID" \
+            --arg plugin_id "$PLUGIN_ID" \
             --arg package_name "$PLUGIN_NAME" \
             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '.[$plugin] = {
