@@ -4,6 +4,13 @@
     "version": "0.1.0",
     "role": "backend-plugin",
     "packageName": "@internal/plugin-backend-test-backend",
-    "timestamp": "2025-10-14T01:32:40Z"
+    "timestamp": "2025-10-14T02:00:42Z"
+  },
+  "tech-radar": {
+    "hash": "a94366acbcd677b2cac1e6afa5279cac89a855b8",
+    "version": "1.10.1",
+    "role": "frontend-plugin",
+    "packageName": "@backstage-community/plugin-tech-radar",
+    "timestamp": "2025-10-14T02:00:42Z"
   }
 }
