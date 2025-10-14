@@ -1,9 +1,0 @@
-{
-  "backend-test-backend": {
-    "hash": "2ee04b05f81a0853598915d443b0df4255cda420",
-    "version": "0.1.0",
-    "role": "backend-plugin",
-    "packageName": "@internal/plugin-backend-test-backend",
-    "timestamp": "2025-10-14T01:15:05Z"
-  }
-}
