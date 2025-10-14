@@ -371,21 +371,6 @@ jobs:
           git push origin HEAD
         fi
 
-    - name: 🔄 Restart RHDH deployment
-      env:
-        NS: poteatc-dev
-      run: |
-        set -euo pipefail
-        DEPLOY=$(oc -n "$NS" get deploy -o name | grep redhat-developer-hub || true)
-        if [ -z "$DEPLOY" ]; then
-          echo "❌ Could not find a deployment named redhat-developer-hub"
-          exit 1
-        fi
-
-        echo "🔄 Restarting $DEPLOY in $NS"
-        oc -n "$NS" rollout restart "$DEPLOY"
-        echo "🚀 Rollout triggered, not waiting for completion."
-
     - name: ⚠️ Display Plugin Configuration Disclaimer
       run: |
         echo "------------------------------------------------------------"
