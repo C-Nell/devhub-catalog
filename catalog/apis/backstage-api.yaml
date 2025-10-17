@@ -1,0 +1,321 @@
+openapi: 3.0.0
+info:
+  title: Red Hat Developer Hub Scaffolder API
+  description: API documentation for RHDH template automation and JIRA integration
+  version: 1.0.0
+  contact:
+    name: Platform Team
+    email: platform-team@example.com
+
+servers:
+  - url: https://redhat-developer-hub-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
+    description: RHDH Production
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/catalog/entities:
+    get:
+      summary: List all catalog entities
+      description: Retrieve all entities from the catalog, optionally filtered by kind
+      tags:
+        - Catalog
+      parameters:
+        - name: filter
+          in: query
+          description: Filter entities by kind (e.g., kind=template)
+          schema:
+            type: string
+            example: kind=template
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogEntity'
+              example:
+                - metadata:
+                    namespace: default
+                    name: create-react-app-template
+                    title: Create React App Template
+                    description: Create a new CRA website project
+                    tags:
+                      - react
+                      - cra
+                  apiVersion: scaffolder.backstage.io/v1beta3
+                  kind: Template
+                  spec:
+                    parameters: []
+
+  /api/catalog/entities/by-name/template/{namespace}/{name}:
+    get:
+      summary: Get specific template
+      description: Retrieve a specific template by namespace and name
+      tags:
+        - Catalog
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+            example: default
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            example: create-react-app-template
+      responses:
+        '200':
+          description: Template found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '404':
+          description: Template not found
+
+  /api/scaffolder/v2/tasks:
+    post:
+      summary: Launch a template
+      description: Create a new scaffolder task to launch a template
+      tags:
+        - Scaffolder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaunchTemplateRequest'
+            example:
+              templateRef: template:default/create-react-app-template
+              values:
+                component_id: React-Test-App
+                description: Test React application
+                owner: group:default/platform-team
+                repoUrl: github.com?owner=po-org&repo=React-Test-App
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+              example:
+                id: 8699b9fd-3005-49f5-8910-a03298e141ee
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+  /api/scaffolder/v2/tasks/{taskId}:
+    get:
+      summary: Get task status
+      description: Retrieve the status and details of a scaffolder task
+      tags:
+        - Scaffolder
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 8699b9fd-3005-49f5-8910-a03298e141ee
+      responses:
+        '200':
+          description: Task details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatus'
+              example:
+                id: 8699b9fd-3005-49f5-8910-a03298e141ee
+                status: completed
+                createdAt: '2025-10-17T01:49:45.796Z'
+                lastHeartbeatAt: '2025-10-17T01:49:48.848Z'
+                spec:
+                  parameters:
+                    component_id: React-Test-App
+                    description: Test React application
+                    owner: group:default/platform-team
+                    repoUrl: github.com?owner=po-org&repo=React-Test-App
+                state:
+                  checkpoints:
+                    v1.task.checkpoint.publish.create.github.repo.po-org.React-Test-App:
+                      status: success
+                      value:
+                        remoteUrl: https://github.com/po-org/React-Test-App.git
+                        repoContentsUrl: https://github.com/po-org/React-Test-App/blob/main
+        '404':
+          description: Task not found
+
+  /api/scaffolder/v2/tasks/{taskId}/eventstream:
+    get:
+      summary: Get task event stream
+      description: Stream real-time logs and events for a running task
+      tags:
+        - Scaffolder
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Use your BACKEND_SECRET token
+
+  schemas:
+    CatalogEntity:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            namespace:
+              type: string
+            name:
+              type: string
+            title:
+              type: string
+            description:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+        apiVersion:
+          type: string
+        kind:
+          type: string
+
+    Template:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            namespace:
+              type: string
+            name:
+              type: string
+            title:
+              type: string
+            description:
+              type: string
+        spec:
+          type: object
+          properties:
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  required:
+                    type: array
+                    items:
+                      type: string
+                  properties:
+                    type: object
+
+    LaunchTemplateRequest:
+      type: object
+      required:
+        - templateRef
+        - values
+      properties:
+        templateRef:
+          type: string
+          description: Template reference in format template:namespace/name
+          example: template:default/create-react-app-template
+        values:
+          type: object
+          description: Template parameter values
+          required:
+            - component_id
+            - owner
+            - repoUrl
+          properties:
+            component_id:
+              type: string
+              description: Unique component identifier
+              example: React-Test-App
+            description:
+              type: string
+              description: Component description
+              example: Test React application
+            owner:
+              type: string
+              description: Owner in format group:namespace/name
+              example: group:default/platform-team
+            repoUrl:
+              type: string
+              description: Repository URL in format github.com?owner=org&repo=name
+              example: github.com?owner=po-org&repo=React-Test-App
+
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique task identifier
+          example: 8699b9fd-3005-49f5-8910-a03298e141ee
+
+    TaskStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Task ID
+        status:
+          type: string
+          enum:
+            - processing
+            - completed
+            - failed
+          description: Current task status
+        createdAt:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+        lastHeartbeatAt:
+          type: string
+          format: date-time
+          description: Last heartbeat timestamp
+        spec:
+          type: object
+          properties:
+            parameters:
+              type: object
+              description: Template parameters used
+        state:
+          type: object
+          properties:
+            checkpoints:
+              type: object
+              description: Task execution checkpoints and outputs
+
+tags:
+  - name: Catalog
+    description: Operations for browsing and retrieving catalog entities
+  - name: Scaffolder
+    description: Operations for launching templates and managing tasks
