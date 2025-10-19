@@ -14,6 +14,8 @@ on:
       - 'scripts/process-plugin.js'
       - 'package.json'
       - '.yarnrc.yml' 
+      - 'processed/.metadata.json'
+      - '.github/workflows/process-plugins.yml'
 
   workflow_dispatch:
 
@@ -23,16 +25,28 @@ jobs:
     runs-on: ubuntu-latest
     env:
       npm_config_nodedir: /usr
+      SERVER_URL: http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com
+      NS: poteatc-dev
 
     steps:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Required for pushing changes back
+        fetch-depth: 0
         token: ${{ secrets.GIT_TOKEN }}
+        path: devhub-catalog
 
-    - name: 🔍 Check if plugins changed
+    - name: 📥 Checkout target repository
+      uses: actions/checkout@v4
+      with:
+        repository: C-Nell/devhub-gitops
+        ref: main
+        token: ${{ secrets.GIT_TOKEN}}
+        path: devhub-gitops 
+        
+    - name: 🔍 Check if plugins in folder need processing
       id: check_changes
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
         
@@ -47,6 +61,7 @@ jobs:
         
         HAS_CHANGES=false
         
+        echo "🔍 Checking which plugins need processing..."
         for dir in plugins/*; do
           [ -d "$dir" ] || continue
           name="$(basename "$dir")"
@@ -56,9 +71,11 @@ jobs:
           STORED_HASH=$(jq -r --arg plugin "$name" '.[$plugin].hash // "none"' "$METADATA_FILE")
           
           if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
-            echo "✓ Plugin '$name' has changed"
+            echo "✓ Plugin '$name' needs processing (current: $CURRENT_HASH, stored: $STORED_HASH)"
             HAS_CHANGES=true
-            break
+            # Don't break - keep checking all plugins
+          else
+            echo "  Plugin '$name' is up to date"
           fi
         done
         
@@ -67,10 +84,11 @@ jobs:
         fi
         
         echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
-
+        
     - name: 🔍 Get Yarn version
       if: steps.check_changes.outputs.has_changes == 'true'
       id: yarn-version
+      working-directory: devhub-catalog
       run: |
         file=$(ls .yarn/releases/yarn-*.cjs | head -n 1)
         version=$(basename "$file" | sed -E 's/^yarn-([0-9]+\.[0-9]+\.[0-9]+)\.cjs$/\1/')
@@ -99,71 +117,50 @@ jobs:
       with:
         node-version: 20
 
+    - name: 🛠️ Install yq
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+        yq --version
+
     - name: 📦 Install dependencies (fresh each run)
       if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
       run: node .yarn/releases/yarn-${YARN_VERSION}.cjs install --mode=skip-build --no-immutable
 
     - name: 🧩 Process plugins
       if: steps.check_changes.outputs.has_changes == 'true'
       id: process
-      run: |
-        set -euo pipefail
-        mkdir -p processed
-        
-        for dir in plugins/*; do
-          [ -d "$dir" ] || continue
-          name="$(basename "$dir")"
-          [[ "$name" == .* ]] && continue
-          
-          echo "=== Processing $name ==="
-          node scripts/process-plugin.js "$name"
-        done
-
-    - name: 💾 Update and commit metadata
-      if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
         
         METADATA_FILE="processed/.metadata.json"
         
-        # Initialize metadata if doesn't exist
-        if [ ! -f "$METADATA_FILE" ]; then
-          echo "{}" > "$METADATA_FILE"
-        fi
-        
-        # Update metadata for all processed plugins
         for dir in plugins/*; do
           [ -d "$dir" ] || continue
           name="$(basename "$dir")"
           [[ "$name" == .* ]] && continue
           
-          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+          # Check if plugin exists in metadata (only if file exists)
+          if [ -f "$METADATA_FILE" ] && jq -e --arg plugin "$name" '.[$plugin]' "$METADATA_FILE" > /dev/null 2>&1; then
+            echo "⊘ Plugin '$name' already in metadata - skipping"
+            continue
+          fi
           
-          jq --arg plugin "$name" \
-             --arg hash "$CURRENT_HASH" \
-             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-             '.[$plugin] = {hash: $hash, timestamp: $timestamp}' \
-             "$METADATA_FILE" > "$METADATA_FILE.tmp"
-          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+          echo "=== Processing $name ==="
+          node scripts/process-plugin.js "$name"
         done
-        
-        # Commit metadata
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add processed/.metadata.json
-        git diff --staged --quiet || git commit -m "chore: update plugin processing metadata [skip ci]"
-        git push
 
     - name: 🔐 Login to OpenShift cluster
       if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         oc login --token=${{ secrets.OC_LOGIN_TOKEN }} --server=https://api.rm1.0a51.p1.openshiftapps.com:6443
-        oc project poteatc-dev
 
     - name: 📤 Copy tarball to pod
       if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        NS: poteatc-dev
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
         POD=$(oc -n "$NS" get pod -l name=httpd-example -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | awk '{print $1}')
@@ -187,78 +184,222 @@ jobs:
           oc -n "$NS" cp "$f" "$POD":"$DEST/"
         done
 
-    - name: 📝 Patch ConfigMap with updated plugin
+    - name: Update dynamic-plugins.yaml
       if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        NS: poteatc-dev
-        CM: redhat-developer-hub-dynamic-plugins
       run: |
         set -euo pipefail
-
-        # Process all tarballs in the processed folder
-        shopt -s nullglob
-        files=(processed/*.tgz)
         
-        if [ ${#files[@]} -eq 0 ]; then
-          echo "No .tgz files found to update ConfigMap"
-          exit 0
-        fi
-
-        echo "🔍 Fetching current ConfigMap..."
-        CURRENT=$(oc -n "$NS" get cm "$CM" -o jsonpath="{.data.dynamic-plugins\.yaml}" || echo "")
-
-        UPDATED="$CURRENT"
-
-        for f in "${files[@]}"; do
-          FILENAME=$(basename "$f")
+        echo "🔍 Scanning for .tgz files..."
+        
+        YAML_FILE="devhub-gitops/core/dynamic-plugins.yaml"
+        ADDED=0
+        UPDATED=0
+        
+        # Backup the original file
+        cp "$YAML_FILE" "${YAML_FILE}.backup"
+        
+        echo "📋 Original YAML:"
+        cat "$YAML_FILE"
+        echo ""
+        
+        # Scan for plugins in the catalog repo
+        for file in devhub-catalog/processed/*.tgz; do
+          [ -f "$file" ] || continue
           
-          # Calculate integrity hash
-          INTEGRITY="sha512-$(openssl dgst -sha512 -binary "$f" | openssl base64 -A)"
+          filename=$(basename "$file")
+          url="${SERVER_URL}/${filename}"
           
-          URL="http://httpd-example-poteatc-dev.apps.rm1.0a51.p1.openshiftapps.com/$FILENAME"
+          echo ""
+          echo "📦 $filename"
           
-          echo "Processing: $FILENAME"
-          echo "Integrity: $INTEGRITY"
-
-          # Remove any existing lines matching the same package URL
-          UPDATED=$(echo "$UPDATED" | grep -v "$URL" || true)
-
-          # Add updated plugin entry
-          NEW_ENTRY=$(printf '  - package: %s\n    integrity: %s\n    disabled: false\n' "$URL" "$INTEGRITY")
+          # Calculate SHA-512 integrity hash (single line with -w0)
+          integrity="sha512-$(sha512sum "$file" | awk '{print $1}' | xxd -r -p | base64 -w0)"
+          echo "   🔒 Integrity: $integrity"
           
-          if [ -n "$UPDATED" ]; then
-            UPDATED="$UPDATED"$'\n'"$NEW_ENTRY"
+          # Check if plugin with this URL already exists (count matches)
+          match_count=$(yq eval "[.plugins[] | select(.package == \"$url\")] | length" "$YAML_FILE" 2>/dev/null || echo "0")
+          
+          if [ "$match_count" -gt 0 ]; then
+            # Plugin exists, check integrity
+            existing_integrity=$(yq eval ".plugins[] | select(.package == \"$url\") | .integrity" "$YAML_FILE" 2>/dev/null)
+            
+            if [ "$existing_integrity" = "$integrity" ]; then
+              echo "   ✅ Already in YAML with correct integrity"
+            elif [ "$existing_integrity" = "null" ] || [ -z "$existing_integrity" ]; then
+              echo "   🔄 Adding missing integrity hash"
+              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" -i "$YAML_FILE"
+              UPDATED=$((UPDATED + 1))
+            else
+              echo "   🔄 Updating integrity hash"
+              yq eval "(.plugins[] | select(.package == \"$url\") | .integrity) = \"$integrity\"" -i "$YAML_FILE"
+              UPDATED=$((UPDATED + 1))
+            fi
           else
-            UPDATED="$NEW_ENTRY"
+            # Plugin doesn't exist, add it using JSON format (safer)
+            echo "   ➕ Adding to YAML"
+            
+            # Ensure plugins array exists
+            if ! yq eval 'has("plugins")' "$YAML_FILE" 2>/dev/null | grep -q true; then
+              yq eval '.plugins = []' -i "$YAML_FILE"
+            fi
+            
+            # Add new plugin using JSON input (more reliable)
+            yq eval ".plugins += [{\"package\": \"$url\", \"integrity\": \"$integrity\", \"disabled\": false}]" \
+              -i "$YAML_FILE"
+            ADDED=$((ADDED + 1))
           fi
         done
-
-        echo "🔧 Patching ConfigMap with updated dynamic-plugins.yaml..."
-        PATCH=$(jq -Rn --arg v "$UPDATED" '{"data": {"dynamic-plugins.yaml": $v}}')
-        echo "$PATCH" > patch.json
-        oc -n "$NS" patch cm "$CM" --type merge --patch-file patch.json
-        rm patch.json
-
-        echo "✅ ConfigMap updated successfully."
-
-    - name: 🔄 Restart RHDH deployment
+        
+        echo ""
+        echo "📋 Updated YAML:"
+        cat "$YAML_FILE"
+        echo ""
+        echo "✅ Added $ADDED new plugin(s), updated $UPDATED plugin(s)"
+        
+        # Show diff
+        echo ""
+        echo "📝 Changes made:"
+        diff "${YAML_FILE}.backup" "$YAML_FILE" || true
+        
+        # Remove backup
+        rm -f "${YAML_FILE}.backup"
+            
+    - name: Show changes in GitOps repo
       if: steps.check_changes.outputs.has_changes == 'true'
-      env:
-        NS: poteatc-dev
+      run: |
+        cd devhub-gitops
+        echo "::group::📝 Changes to dynamic-plugins.yaml"
+        git diff core/dynamic-plugins.yaml
+        echo "::endgroup::"
+    
+    - name: Commit and push to GitOps repo
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        cd devhub-gitops
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add core/dynamic-plugins.yaml
+        git diff --staged --quiet || git commit -m "chore: update dynamic-plugins.yaml with latest plugins"
+        git push origin main
+    - name: 💾 Update metadata in file
+      if: steps.check_changes.outputs.has_changes == 'true'
+      working-directory: devhub-catalog
       run: |
         set -euo pipefail
-        DEPLOY=$(oc -n "$NS" get deploy -o name | grep redhat-developer-hub || true)
-        if [ -z "$DEPLOY" ]; then
-          echo "❌ Could not find a deployment named redhat-developer-hub"
-          exit 1
+        
+        METADATA_FILE="processed/.metadata.json"
+        
+        # Ensure directory exists
+        mkdir -p processed
+        
+        # Initialize or fix metadata file if it doesn't exist or is empty/invalid
+        if [ ! -f "$METADATA_FILE" ] || [ ! -s "$METADATA_FILE" ]; then
+          echo "Initializing empty metadata file"
+          echo "{}" > "$METADATA_FILE"
+        else
+          # Verify it's valid JSON, if not reinitialize
+          if ! jq empty "$METADATA_FILE" 2>/dev/null; then
+            echo "Metadata file has invalid JSON, reinitializing"
+            echo "{}" > "$METADATA_FILE"
+          fi
+        fi
+        
+        echo "📋 Current metadata before update:"
+        cat "$METADATA_FILE"
+        echo ""
+        
+        # Update metadata for all processed plugins
+        for dir in plugins/*; do
+          [ -d "$dir" ] || continue
+          name="$(basename "$dir")"
+          [[ "$name" == .* ]] && continue
+          
+          CURRENT_HASH=$(git log -1 --format="%H" -- "$dir")
+          
+          # Extract version and role from package.json
+          PACKAGE_JSON="$dir/package.json"
+          if [ -f "$PACKAGE_JSON" ]; then
+            VERSION=$(jq -r '.version // "unknown"' "$PACKAGE_JSON")
+            ROLE=$(jq -r '.backstage.role // "unknown"' "$PACKAGE_JSON")
+            PLUGIN_ID=$(jq -r '.backstage.pluginId // "unknown"' "$PACKAGE_JSON")
+            PLUGIN_NAME=$(jq -r '.name // "unknown"' "$PACKAGE_JSON")
+            
+            echo "Updating plugin: $name"
+            echo "  Package name: $PLUGIN_NAME"
+            echo "  Version: $VERSION"
+            echo "  Role: $ROLE"
+            echo "  Plugin Id: $PLUGIN_ID"
+            echo "  Hash: $CURRENT_HASH"
+          else
+            echo "⚠️  No package.json found for $name, using defaults"
+            VERSION="unknown"
+            ROLE="unknown"
+            PLUGIN_NAME="unknown"
+          fi
+          
+          # Update metadata with all fields
+          jq --arg plugin "$name" \
+            --arg hash "$CURRENT_HASH" \
+            --arg version "$VERSION" \
+            --arg role "$ROLE" \
+            --arg plugin_id "$PLUGIN_ID" \
+            --arg package_name "$PLUGIN_NAME" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '.[$plugin] = {
+              hash: $hash, 
+              version: $version, 
+              role: $role, 
+              packageName: $package_name,
+              timestamp: $timestamp
+            }' \
+            "$METADATA_FILE" > "$METADATA_FILE.tmp"
+          
+          # Verify the tmp file was created and has content
+          if [ ! -s "$METADATA_FILE.tmp" ]; then
+            echo "❌ Error: temp file is empty or doesn't exist!"
+            echo "Metadata file content:"
+            cat "$METADATA_FILE"
+            echo "jq command failed"
+            exit 1
+          fi
+          
+          # Move temp file to actual file
+          mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+          
+          echo "✓ Updated metadata for '$name'"
+          echo ""
+        done
+        
+        echo ""
+        echo "📋 Final metadata after update:"
+        cat "$METADATA_FILE"     
+
+    - name: Commit metadata to current repo
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        cd devhub-catalog
+        
+        echo "📋 Metadata content before commit:"
+        cat processed/.metadata.json
+        echo ""
+        
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add processed/.metadata.json
+        
+        echo "📝 Git status:"
+        git status
+        echo ""
+        
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          echo "Committing changes..."
+          git commit -m "chore: update plugin processing metadata [skip ci]"
+          git push origin HEAD
         fi
 
-        echo "🔄 Restarting $DEPLOY in $NS"
-        oc -n "$NS" rollout restart "$DEPLOY"
-        echo "🚀 Rollout triggered, not waiting for completion."
-
     - name: ⚠️ Display Plugin Configuration Disclaimer
-      if: steps.check_changes.outputs.has_changes == 'true'
       run: |
         echo "------------------------------------------------------------"
         echo "This plugin may require additional configuration in your"
