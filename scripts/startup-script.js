@@ -88,15 +88,15 @@ let backendIndex = fs.readFileSync(backendIndexPath, 'utf8');
 
 console.log('\n⚙️  ========== Configuring Backend ==========\n');
 
-// Add dotenv import and config if not already present
-if (!backendIndex.includes("import dotenv from 'dotenv'")) {
-  const dotenvCode = "import dotenv from 'dotenv';\ndotenv.config({ path: '../../.env' });\n\n";
-  backendIndex = dotenvCode + backendIndex;
-  fs.writeFileSync(backendIndexPath, backendIndex);
-  console.log('✔️  Added dotenv import and config to backend/src/index.ts');
-} else {
-  console.log('✔️  Dotenv already configured');
-}
+// // Add dotenv import and config if not already present
+// if (!backendIndex.includes("import dotenv from 'dotenv'")) {
+//   const dotenvCode = "import dotenv from 'dotenv';\ndotenv.config({ path: '../../.env' });\n\n";
+//   backendIndex = dotenvCode + backendIndex;
+//   fs.writeFileSync(backendIndexPath, backendIndex);
+//   console.log('✔️  Added dotenv import and config to backend/src/index.ts');
+// } else {
+//   console.log('✔️  Dotenv already configured');
+// }
 
 if (fs.existsSync('.env')) {
   console.log('\n✔️  .env file exists, skipping setup...');
