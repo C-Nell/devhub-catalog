@@ -1,0 +1,37 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: vm-prov
+  title: VM Provisioning
+  description: Provision virtual machines
+  annotations:
+    restricted: "true"                    # ← ADD THIS LINE
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - infrastructure
+    - vm
+spec:
+  owner: group:default/platform-team
+  type: service
+  
+  parameters:
+    - title: VM Configuration
+      required:
+        - name
+      properties:
+        name:
+          title: VM Name
+          type: string
+          description: Name for your VM
+  
+  steps:
+    - id: provision
+      name: Provision VM
+      action: vm:create
+      input:
+        name: ${{ parameters.name }}
+  
+  output:
+    links:
+      - title: VM Details
+        url: ${{ steps.provision.output.vmUrl }}
