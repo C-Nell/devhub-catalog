@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha3
+kind: Component
+metadata:
+  name: test-guest-component
+  description: Test component for guest conditional access
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/guest
