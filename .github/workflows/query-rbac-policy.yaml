@@ -1,0 +1,158 @@
+name: Query All RBAC Policies
+
+on:
+  workflow_dispatch:
+
+jobs:
+  query-policies:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Install Dependencies
+      run: sudo apt-get update && sudo apt-get install -y jq
+    
+    - name: Get Authentication Token
+      id: auth
+      run: |
+        TOKEN=$(curl -s -X POST "${{ secrets.RHDH_URL }}/api/auth/guest/refresh" | jq -r '.backstageIdentity.token')
+        echo "::add-mask::$TOKEN"
+        echo "token=$TOKEN" >> $GITHUB_OUTPUT
+    
+    - name: Query All Policies
+      env:
+        RHDH_URL: ${{ secrets.RHDH_URL }}
+        TOKEN: ${{ steps.auth.outputs.token }}
+      run: |
+        echo "=========================================="
+        echo "Fetching All RBAC Conditional Policies"
+        echo "=========================================="
+        echo ""
+        
+        POLICIES=$(curl -s -X GET "$RHDH_URL/api/permission/policies" \
+          -H "Authorization: Bearer $TOKEN")
+        
+        echo "$POLICIES" | jq .
+    
+    - name: Display Policy Summary
+      env:
+        RHDH_URL: ${{ secrets.RHDH_URL }}
+        TOKEN: ${{ steps.auth.outputs.token }}
+      run: |
+        POLICIES=$(curl -s -X GET "$RHDH_URL/api/permission/policies" \
+          -H "Authorization: Bearer $TOKEN")
+        
+        COUNT=$(echo "$POLICIES" | jq '. | length')
+        
+        echo ""
+        echo "=========================================="
+        echo "Policy Summary"
+        echo "=========================================="
+        echo "Total Policies: $COUNT"
+        echo ""
+        
+        if [ "$COUNT" -eq 0 ]; then
+          echo "No policies found."
+        else
+          echo "Policies:"
+          echo "$POLICIES" | jq -r '.[] | "  - \(.roleEntityRef) (ID: \(.id))"'
+        fi
+    
+    - name: Generate GitHub Summary
+      env:
+        RHDH_URL: ${{ secrets.RHDH_URL }}
+        TOKEN: ${{ steps.auth.outputs.token }}
+      run: |
+        POLICIES=$(curl -s -X GET "$RHDH_URL/api/permission/policies" \
+          -H "Authorization: Bearer $TOKEN")
+        
+        COUNT=$(echo "$POLICIES" | jq '. | length')
+        
+        echo "# RBAC Policies Report 📊" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Total Conditional Policies:** $COUNT" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$COUNT" -gt 0 ]; then
+          echo "## Policies" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Role | Plugin | Resource Type | Permissions | Policy ID |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|---------------|-------------|-----------|" >> $GITHUB_STEP_SUMMARY
+          
+          echo "$POLICIES" | jq -r '.[] | 
+            "| \(.roleEntityRef) | \(.pluginId) | \(.resourceType) | \(.permissionMapping | join(", ")) | `\(.id)` |"' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Policy Details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "$POLICIES" | jq -r '.[] | 
+            "### \(.roleEntityRef)\n" +
+            "- **ID:** `\(.id)`\n" +
+            "- **Plugin:** \(.pluginId)\n" +
+            "- **Resource Type:** \(.resourceType)\n" +
+            "- **Permissions:** \(.permissionMapping | join(", "))\n" +
+            "- **Result:** \(.result)\n"' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No conditional policies found." >> $GITHUB_STEP_SUMMARY
+        fi
+```
+
+## 🎯 Usage
+
+1. Go to **Actions** tab in your GitHub repository
+2. Select **"Query All RBAC Policies"**
+3. Click **"Run workflow"**
+4. Click **"Run workflow"** button
+
+## 📊 Output Example
+
+The workflow will show:
+```
+==========================================
+Fetching All RBAC Conditional Policies
+==========================================
+
+[
+  {
+    "id": "abc123",
+    "result": "CONDITIONAL",
+    "roleEntityRef": "role:default/vm-team",
+    "pluginId": "catalog",
+    "resourceType": "catalog-entity",
+    "permissionMapping": ["read"],
+    "conditions": {
+      "anyOf": [
+        {
+          "rule": "IS_ENTITY_OWNER",
+          "resourceType": "catalog-entity",
+          "params": {
+            "claims": ["group:default/vm-team"]
+          }
+        },
+        {
+          "rule": "HAS_LABEL",
+          "resourceType": "catalog-entity",
+          "params": {
+            "label": "visibility",
+            "value": "public"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "def456",
+    "result": "CONDITIONAL",
+    "roleEntityRef": "role:default/aws-team",
+    ...
+  }
+]
+
+==========================================
+Policy Summary
+==========================================
+Total Policies: 2
+
+Policies:
+  - role:default/vm-team (ID: abc123)
+  - role:default/aws-team (ID: def456)
