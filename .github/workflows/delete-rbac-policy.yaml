@@ -1,0 +1,40 @@
+name: Delete RBAC Policy
+
+on:
+  workflow_dispatch:
+    inputs:
+      team_name:
+        description: 'Team name to remove (e.g., vm-team, aws-team, guests)'
+        required: true
+        type: string
+
+jobs:
+  delete-policy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Delete RBAC Conditional Policy
+      run: |
+        TOKEN=$(curl -s -X POST "${{ secrets.RHDH_URL }}/api/auth/guest/refresh" | jq -r '.backstageIdentity.token')
+        
+        POLICY_ID=$(curl -s -X GET "${{ secrets.RHDH_URL }}/api/permission/policies" \
+          -H "Authorization: Bearer $TOKEN" | \
+          jq -r '.[] | select(.roleEntityRef == "role:default/${{ github.event.inputs.team_name }}") | .id')
+        
+        if [ -z "$POLICY_ID" ] || [ "$POLICY_ID" = "null" ]; then
+          echo "❌ No policy found for team: ${{ github.event.inputs.team_name }}"
+          exit 1
+        fi
+        
+        echo "Found policy ID: $POLICY_ID"
+        
+        HTTP_CODE=$(curl -s -w "%{http_code}" -o /dev/null \
+          -X DELETE "${{ secrets.RHDH_URL }}/api/permission/policies/$POLICY_ID" \
+          -H "Authorization: Bearer $TOKEN")
+        
+        if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
+          echo "✅ Policy deleted successfully for ${{ github.event.inputs.team_name }}"
+        else
+          echo "❌ Failed to delete policy (HTTP $HTTP_CODE)"
+          exit 1
+        fi
