@@ -4,8 +4,8 @@ metadata:
   name: hello-world-template
   title: Print Hello World!
   description: Say Hello to a specified name.
-  annotations:
-    backstage.io/public: "true"
+  labels:
+    visibility: public    # ← ADD THIS
 spec:
   owner: developers
   type: service
