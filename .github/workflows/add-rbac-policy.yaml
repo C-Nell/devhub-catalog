@@ -1,4 +1,4 @@
-name: Create RBAC Conditional Policy
+name: Create RBAC Policy
 
 on:
   workflow_dispatch:
@@ -15,10 +15,8 @@ jobs:
     steps:
     - name: Create RBAC Conditional Policy
       run: |
-        # Get auth token
         TOKEN=$(curl -s -X POST "${{ secrets.RHDH_URL }}/api/auth/guest/refresh" | jq -r '.backstageIdentity.token')
         
-        # Create policy via REST API
         curl -X POST "${{ secrets.RHDH_URL }}/api/permission/policies" \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $TOKEN" \
@@ -53,12 +51,3 @@ jobs:
           }'
         
         echo "✅ Policy created for ${{ github.event.inputs.team_name }}"
-```
-
-## 📝 Setup
-
-1. **Add GitHub Secret:**
-```
-   Repository → Settings → Secrets → New secret
-   Name: RHDH_URL
-   Value: https://your-rhdh-instance.com
