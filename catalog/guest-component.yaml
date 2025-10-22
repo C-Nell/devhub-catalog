@@ -8,5 +8,5 @@ metadata:
 spec:
   type: service
   lifecycle: experimental
-  owner: user:default/guest
+  owner: user:development/guest
   system: test-system
