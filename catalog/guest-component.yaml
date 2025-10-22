@@ -1,9 +1,12 @@
-apiVersion: backstage.io/v1alpha3
+apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: test-guest-component
   description: Test component for guest conditional access
+  annotations:
+    backstage.io/managed-by-location: url:file:///test-guest-component.yaml
 spec:
   type: service
   lifecycle: experimental
   owner: user:default/guest
+  system: test-system
