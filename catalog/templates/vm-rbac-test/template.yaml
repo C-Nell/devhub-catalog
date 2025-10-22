@@ -2,16 +2,12 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: vm-prov
-  title: VM Provisioning
-  description: Provision virtual machines
   annotations:
-    restricted: "true"                    # ← ADD THIS LINE
-    backstage.io/techdocs-ref: dir:.
-  tags:
-    - infrastructure
-    - vm
+    restricted: "true"
+  labels:
+    team: vm                    # ← ADD THIS
 spec:
-  owner: group:default/platform-team
+  owner: group:default/vm-team
   type: service
   
   parameters:
