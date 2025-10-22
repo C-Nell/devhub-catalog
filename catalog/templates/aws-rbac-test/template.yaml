@@ -1,0 +1,33 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: aws-prov
+  annotations:
+    restricted: "true"
+  labels:
+    team: aws                    # ← ADD THIS
+spec:
+  owner: group:default/aws-team
+  type: service
+  
+  parameters:
+    - title: AWS Configuration
+      required:
+        - name
+      properties:
+        name:
+          title: AWS Name
+          type: string
+          description: Name for your AWS resources
+  
+  steps:
+    - id: provision
+      name: Provision AWS resources
+      action: aws:create
+      input:
+        name: ${{ parameters.name }}
+  
+  output:
+    links:
+      - title: AWS Details
+        url: ${{ steps.provision.output.vmUrl }}
