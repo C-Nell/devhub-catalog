@@ -4,7 +4,8 @@ metadata:
   name: hello-world-template
   title: Print Hello World!
   description: Say Hello to a specified name.
-
+  annotations:
+    backstage.io/public: "true"
 spec:
   owner: developers
   type: service
@@ -15,7 +16,6 @@ spec:
       properties:
         name:
           type: string
-
   steps:
     - id: log-message
       name: Log Message
