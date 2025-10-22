@@ -1,0 +1,64 @@
+name: Create RBAC Policy
+
+on:
+  workflow_dispatch:
+    inputs:
+      team_name:
+        description: 'Team name (e.g., vm-team, aws-team, guests)'
+        required: true
+        type: string
+
+jobs:
+  create-policy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Create RBAC Conditional Policy
+      run: |
+        # Get auth token
+        TOKEN=$(curl -s -X POST "${{ secrets.RHDH_URL }}/api/auth/guest/refresh" | jq -r '.backstageIdentity.token')
+        
+        # Create policy via REST API
+        curl -X POST "${{ secrets.RHDH_URL }}/api/permission/policies" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $TOKEN" \
+          -d '{
+            "result": "CONDITIONAL",
+            "roleEntityRef": "role:default/${{ github.event.inputs.team_name }}",
+            "pluginId": "catalog",
+            "resourceType": "catalog-entity",
+            "permissionMapping": ["read"],
+            "conditions": {
+              "anyOf": [
+                {
+                  "rule": "IS_ENTITY_OWNER",
+                  "resourceType": "catalog-entity",
+                  "params": {
+                    "claims": [
+                      "user:development/${{ github.event.inputs.team_name }}",
+                      "group:default/${{ github.event.inputs.team_name }}"
+                    ]
+                  }
+                },
+                {
+                  "rule": "HAS_LABEL",
+                  "resourceType": "catalog-entity",
+                  "params": {
+                    "label": "visibility",
+                    "value": "public"
+                  }
+                }
+              ]
+            }
+          }'
+        
+        echo "✅ Policy created for ${{ github.event.inputs.team_name }}"
+```
+
+## 📝 Setup
+
+1. **Add GitHub Secret:**
+```
+   Repository → Settings → Secrets → New secret
+   Name: RHDH_URL
+   Value: https://your-rhdh-instance.com
