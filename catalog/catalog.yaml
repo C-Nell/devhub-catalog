@@ -1,0 +1,77 @@
+# ========================================
+# CASBIN-STYLE PERMISSIONS FOR ADMIN / PLATFORM
+# ========================================
+# Admin - Full access
+p, role:default/admin, catalog-entity, read, allow
+p, role:default/admin, catalog-entity, create, allow
+p, role:default/admin, catalog-entity, update, allow
+p, role:default/admin, catalog-entity, delete, allow
+p, role:default/admin, catalog.entity.refresh, update, allow
+p, role:default/admin, catalog.location.read, read, allow
+p, role:default/admin, catalog.location.create, create, allow
+p, role:default/admin, catalog.location.delete, delete, allow
+p, role:default/admin, scaffolder-template, read, allow
+p, role:default/admin, scaffolder-action, use, allow
+p, role:default/admin, scaffolder.task.create, create, allow
+p, role:default/admin, scaffolder.task.read, read, allow
+p, role:default/admin, scaffolder.task.cancel, delete, allow
+p, role:default/admin, policy.entity.read, read, allow
+p, role:default/admin, policy.entity.create, create, allow
+p, role:default/admin, policy.entity.update, update, allow
+p, role:default/admin, policy.entity.delete, delete, allow
+
+# Platform team - Same as admin
+p, role:default/platform-team, catalog-entity, read, allow
+p, role:default/platform-team, catalog-entity, create, allow
+p, role:default/platform-team, catalog-entity, update, allow
+p, role:default/platform-team, catalog-entity, delete, allow
+p, role:default/platform-team, catalog.entity.refresh, update, allow
+p, role:default/platform-team, catalog.location.read, read, allow
+p, role:default/platform-team, catalog.location.create, create, allow
+p, role:default/platform-team, catalog.location.delete, delete, allow
+p, role:default/platform-team, scaffolder-template, read, allow
+p, role:default/platform-team, scaffolder-action, use, allow
+p, role:default/platform-team, scaffolder.task.create, create, allow
+p, role:default/platform-team, scaffolder.task.read, read, allow
+p, role:default/platform-team, scaffolder.task.cancel, delete, allow
+p, role:default/platform-team, policy.entity.read, read, allow
+p, role:default/platform-team, policy.entity.create, create, allow
+p, role:default/platform-team, policy.entity.update, update, allow
+p, role:default/platform-team, policy.entity.delete, delete, allow
+
+# VM team - Basic permissions (conditional policies will refine access)
+p, role:default/vm-team, catalog-entity, read, allow
+p, role:default/vm-team, catalog-entity, update, allow
+p, role:default/vm-team, catalog.entity.refresh, update, allow
+p, role:default/vm-team, scaffolder-template, read, allow
+p, role:default/vm-team, scaffolder-action, use, allow
+p, role:default/vm-team, scaffolder.task.create, create, allow
+p, role:default/vm-team, scaffolder.task.read, read, allow
+
+# AWS team - Basic permissions (conditional policies will refine access)
+p, role:default/aws-team, catalog-entity, read, allow
+p, role:default/aws-team, catalog-entity, update, allow
+p, role:default/aws-team, catalog.entity.refresh, update, allow
+p, role:default/aws-team, scaffolder-template, read, allow
+p, role:default/aws-team, scaffolder-action, use, allow
+p, role:default/aws-team, scaffolder.task.create, create, allow
+p, role:default/aws-team, scaffolder.task.read, read, allow
+
+# Guest - Read Components, Templates, Groups, Locations only
+p, role:default/guest, catalog-entity, read, allow
+p, role:default/guest, catalog.entity.read, read, allow
+p, role:default/guest, catalog.location.read, read, allow
+p, role:default/guest, scaffolder-template, read, allow
+p, role:default/guest, scaffolder-action, use, allow
+p, role:default/guest, scaffolder.task.create, create, allow
+p, role:default/guest, scaffolder.task.read, read, allow
+p, role:default/guest, scaffolder.task.cancel, delete, allow
+
+# ========================================
+# ROLE ASSIGNMENTS
+# ========================================
+g, user:default/TPoteat775, role:default/admin
+g, group:default/platform-team, role:default/platform-team
+g, group:default/vm-team, role:default/vm-team
+g, group:default/aws-team, role:default/aws-team
+g, user:development/guest, role:default/guest
