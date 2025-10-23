@@ -1,0 +1,45 @@
+---
+result: CONDITIONAL
+roleEntityRef: role:default/guest
+pluginId: catalog
+resourceType: catalog-entity
+permissionMapping:
+  - read
+conditions:
+  anyOf:
+    # Templates and Components only if owned by guests group
+    - rule: IS_ENTITY_OWNER
+      resourceType: catalog-entity
+      params:
+        claims:
+          - group:default/guests
+    # Show ALL of these entity kinds, regardless of ownership
+    - rule: IS_ENTITY_KIND
+      resourceType: catalog-entity
+      params:
+        kinds:
+          - Group
+          - Location
+          - Resource
+          - Domain
+    # Show any entity with visibility: public label
+    - rule: HAS_LABEL
+      resourceType: catalog-entity
+      params:
+        label: visibility
+        value: public
+
+---
+result: CONDITIONAL
+roleEntityRef: role:default/guest
+pluginId: catalog
+resourceType: catalog-entity
+permissionMapping:
+  - update
+  - delete
+conditions:
+  rule: IS_ENTITY_OWNER
+  resourceType: catalog-entity
+  params:
+    claims:
+      - group:default/guests
