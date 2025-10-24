@@ -3,8 +3,5 @@ kind: User
 metadata:
   name: guest
 spec:
-  memberOf:
-    - guests
   profile:
     displayName: Guest User
-    email: guest@example.com
