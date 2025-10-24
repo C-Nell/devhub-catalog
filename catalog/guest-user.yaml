@@ -11,3 +11,5 @@ spec:
   children: []
   members:
     - user:development/guest
+    - development/guest
+    - Guest
