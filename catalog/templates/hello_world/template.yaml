@@ -4,8 +4,8 @@ metadata:
   name: hello-world-template
   title: Print Hello World!
   description: Say Hello to a specified name.
-  labels:
-    visibility: public    # ← ADD THIS
+  annotations:
+    restricted: "true"
 spec:
   owner: developers
   type: service
