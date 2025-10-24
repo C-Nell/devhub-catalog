@@ -1,15 +1,9 @@
 apiVersion: backstage.io/v1alpha1
-kind: Group
+kind: User
 metadata:
-  name: guests
-  description: Guest Team
+  name: guest
+  namespace: development
 spec:
-  type: team
   profile:
-    displayName: guest team
-    email: guests@yourcompany.com
-  children: []
-  members:
-    - user:development/guest
-    - development/guest
-    - Guest
+    displayName: Guest User
+    email: guest@example.com
