@@ -6,6 +6,8 @@ metadata:
   description: Say Hello to a specified name.
   annotations:
     restricted: "true"
+  labels:
+    visibility: public  # ← Add this!
 spec:
   owner: developers
   type: service
