@@ -7,4 +7,4 @@ spec:
   type: team
   children: []
   members:
-    - guest  # This should match the user part of user:development/guest
+    - user:development/guest # This should match the user part of user:development/guest
