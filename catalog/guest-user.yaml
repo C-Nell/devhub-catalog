@@ -1,11 +1,12 @@
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: test-user
-  title: guest user
-  description: guest manager
+  name: your-github-username # Replace with the actual username
+  title: Your Name
+  description: Software Engineer
 spec:
   profile:
-    displayName: Guest
-    email: guest.user@example.com
-  memberOf: guests
+	displayName: Your Name
+	email: your.email@example.com
+	picture: https://example.com/your-picture.jpg # Optional
+  memberOf: [guests, engineering-team] # Groups the user belongs to
