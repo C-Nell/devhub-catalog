@@ -1,13 +1,10 @@
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: john.doe
-  description: Software Engineer
+  name: guest.user
 spec:
   profile:
-    displayName: John Doe
-    email: john.doe@example.com
-    picture: https://example.com/avatar.jpg
+    displayName: Your Name
+    email: your.email@example.com
   memberOf:
-    - team-a
-    - developers
+    - guests
