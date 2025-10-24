@@ -5,6 +5,9 @@ metadata:
   namespace: default
 spec:
   type: team
-  children: []
+  profile:
+    displayName: Guest Team
+    email: guests@yourcompany.com
   members:
-    - development/guest  # ← Explicitly specify namespace/name
+    - guest  # References user:default/guest
+    # Remove any members that don't exist yet
