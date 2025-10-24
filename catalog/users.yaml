@@ -1,10 +1,22 @@
+---
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
   name: guest.user
 spec:
   profile:
-    displayName: Your Name
-    email: your.email@example.com
+    displayName: Guest User
+    email: guest@example.com
   memberOf:
     - guests
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: another.user
+spec:
+  profile:
+    displayName: Another User
+    email: another@example.com
+  memberOf:
+    - engineering
