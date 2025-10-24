@@ -10,4 +10,4 @@ spec:
     email: vm-team@yourcompany.com
   children: []
   members:
-    - c-nell  # Add your username here
+    # - c-nell  # Add your username here
