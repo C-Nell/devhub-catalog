@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: guests
+  namespace: default
+spec:
+  type: team
+  children: []
+  members:
+    - guest  # This should match the user part of user:development/guest
