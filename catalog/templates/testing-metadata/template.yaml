@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: user-aware-template
-  title: User Aware Template
-  description: A template that uses user information
+  name: org-template
+  title: Organization Template
+  description: Template with organization selection
 spec:
   owner: backstage-team
   type: service
@@ -14,27 +14,21 @@ spec:
         projectName:
           title: Project Name
           type: string
-          description: Name of your project
+        orgName:
+          title: Organization
+          type: string
+          enum: [c-nell, po-org]  # Predefined orgs
+          enumNames: [Personal Account, Local Org]  # Display names
+          description: Select the organization for the repository
         description:
           title: Description
           type: string
-          description: Project description
 
   steps:
-    - id: debug-user
-      name: Debug User Info
-      action: debug:log
-      input:
-        message: 'User ref: {{ user.ref }}'
-
     - id: publish
       name: Publish to GitHub
       action: publish:github
       input:
-        # CORRECT FORMATS:
-        repoUrl: 'github.com?repo={{ parameters.projectName }}&owner=your-username'
-        # OR
-        # repoUrl: 'github.com?repo={{ parameters.projectName }}&owner=your-org-name'
-        
+        repoUrl: 'github.com?repo={{ parameters.projectName }}&owner={{ parameters.orgName }}'
         gitAuthorName: '{{ user.ref }}'
         gitAuthorEmail: '{{ user.ref }}@yourcompany.com'
