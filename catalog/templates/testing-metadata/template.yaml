@@ -31,6 +31,6 @@ spec:
       name: Publish to Git
       action: publish:github
       input:
-        repoUrl: 'https://github.com/your-org/{{ parameters.projectName }}'  # ← Use parameters
+        repoUrl: 'https://github.com/po-org/{{ parameters.projectName }}'  # ← Use parameters
         gitAuthorName: '{{ user.ref }}'
         gitAuthorEmail: '{{ user.ref }}@yourcompany.com'
