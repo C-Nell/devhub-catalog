@@ -34,6 +34,8 @@ spec:
       input:
         repoUrl: github.com?repo=${{ parameters.name }}&owner=po-org
         description: Test repository
+        gitAuthorName: '{{ user.entity.spec.profile.displayName }}'
+        gitAuthorEmail: '{{ user.entity.spec.profile.email }}'
     
   #   - id: register
   #     name: Register in Catalog
