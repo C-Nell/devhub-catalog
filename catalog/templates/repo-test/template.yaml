@@ -1,0 +1,51 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: test-github-repo
+  title: Test GitHub Repo Creation
+  description: Simple test template to verify user metadata in commits
+spec:
+  owner: group:default/platform
+  type: test
+  
+  parameters:
+    - title: Repository Info
+      required:
+        - name
+      properties:
+        name:
+          title: Repository Name
+          type: string
+          description: Name for your test repo (lowercase-with-hyphens)
+          pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
+  
+  steps:
+    - id: fetch
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+    
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?repo=${{ parameters.name }}&owner=po-org
+        description: Test repository
+    
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+  
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
