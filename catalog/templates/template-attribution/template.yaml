@@ -1,0 +1,67 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-service
+  title: Create New Service
+spec:
+  owner: group:default/developers
+  type: service
+  
+  parameters:
+    - title: Service Information
+      required:
+        - name
+      properties:
+        name:
+          title: Service Name
+          type: string
+        description:
+          title: Description
+          type: string
+  
+  steps:
+    - id: fetch
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+    
+    # Add attribution file
+    - id: create-attribution
+      name: Add Attribution Metadata
+      action: fs:write
+      input:
+        path: .backstage-metadata.yaml
+        content: |
+          createdBy:
+            backstageUser: ${{ user.entity.metadata.name }}
+            backstageEmail: ${{ user.entity.spec.profile.email }}
+            displayName: ${{ user.entity.spec.profile.displayName }}
+            timestamp: ${{ "" | now }}
+            source: backstage-scaffolder
+    
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?repo=${{ parameters.name }}&owner=po-org
+        description: ${{ parameters.description }}
+        # Service account creates repo, but commit shows Backstage user
+        gitAuthorName: ${{ user.entity.spec.profile.displayName or user.entity.metadata.name }}
+        gitAuthorEmail: ${{ user.entity.spec.profile.email or 'backstage@irs.gov' }}
+        # Add to commit message
+        gitCommitMessage: |
+          Initial commit from Backstage
+          
+          Created by: ${{ user.entity.metadata.name }} (${{ user.entity.spec.profile.email }})
+          Via: IRS Developer Hub
+    
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
