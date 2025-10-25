@@ -1,39 +1,25 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
-metadata:
-  name: test-author-config
-  title: Test Default Author Config
-  description: Simple test to verify defaultAuthor is working
 spec:
-  owner: user:default/guest
-  type: service
-  
   parameters:
-    - title: Repository Info
-      required:
-        - repoUrl
+    - title: User Info
       properties:
-        repoUrl:
-          title: Repository Location
+        # Pre-populate with user data
+        authorName:
+          title: Author Name
           type: string
-          ui:field: RepoUrlPicker
-          ui:options:
-            allowedHosts:
-              - github.com
-  
+          default: '{{ user.entity.spec.profile.displayName }}'
+        authorEmail:
+          title: Author Email  
+          type: string
+          default: '{{ user.entity.spec.profile.email }}'
+
   steps:
     - id: publish
-      name: Publish to GitHub
+      name: Publish to Git
       action: publish:github
       input:
-        repoUrl: ${{ parameters.repoUrl }}
-        description: Test repository for defaultAuthor config
-        # gitAuthorName and gitAuthorEmail should be auto-injected from defaultAuthor config!
-  
-  output:
-    links:
-      - title: Repository
-        url: ${{ steps.publish.output.remoteUrl }}
-      - title: Open in catalog
-        icon: catalog
-        entityRef: ${{ steps.publish.output.entityRef }}
+        repoUrl: 'github.com?repo=my-repo&owner=my-org'
+        # Pass user data to git commit
+        gitAuthorName: '{{ parameters.authorName }}'
+        gitAuthorEmail: '{{ parameters.authorEmail }}'
