@@ -14,4 +14,7 @@ spec:
       name: Say hello to the logged in user
       action: debug:log
       input:
-        message: Hello ${{identity.userEntityRef}}
+        message: |
+          User: ${{ user.entity.metadata.name }}
+          Email: ${{ user.entity.spec.profile.email }}
+          Display Name: ${{ user.entity.spec.profile.displayName }}
