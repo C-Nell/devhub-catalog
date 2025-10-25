@@ -9,6 +9,12 @@ spec:
   type: test
   
   steps:
+    - id: dump-context
+      name: Dump Full Context
+      action: debug:log
+      input:
+        message: '{{ parameters | dump }} {{ user | dump }}'
+        
     - id: debug-all-user-data
       name: Debug All User Data
       action: debug:log
@@ -23,9 +29,3 @@ spec:
           user.entity.spec.profile: {{ user.entity.spec.profile }}
           user.entity.spec.profile.displayName: {{ user.entity.spec.profile.displayName }}
           user.entity.spec.profile.email: {{ user.entity.spec.profile.email }}
-
-    #   input:
-    #     repoUrl: github.com?repo=${{ parameters.name }}&owner=${{ parameters.owner }}
-    #     description: Test repository created via Backstage
-    #     gitAuthorName: '{{ user.ref }}'
-    #     gitAuthorEmail: '{{ user.ref }}@yourcompany.com'
