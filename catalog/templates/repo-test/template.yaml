@@ -12,12 +12,21 @@ spec:
     - title: Repository Info
       required:
         - name
+        - owner
       properties:
         name:
           title: Repository Name
           type: string
           description: Name for your test repo (lowercase-with-hyphens)
           pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
+        owner:
+          title: Repository Owner
+          type: string
+          enum:
+            - po-org
+            - your-company
+            - engineering-team
+            - devops-group
   
   steps:
     - id: fetch
@@ -47,22 +56,7 @@ spec:
       name: Publish to GitHub
       action: publish:github
       input:
-        repoUrl: github.com?repo=${{ parameters.name }}&owner=po-org
+        repoUrl: github.com?repo=${{ parameters.name }}&owner=${{ parameters.owner }}
         description: Test repository
         gitAuthorName: '{{ user.ref }}'
         gitAuthorEmail: '{{ user.ref }}'
-    
-  #   - id: register
-  #     name: Register in Catalog
-  #     action: catalog:register
-  #     input:
-  #       repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
-  #       catalogInfoPath: /catalog-info.yaml
-  
-  # output:
-  #   links:
-  #     - title: Repository
-  #       url: ${{ steps.publish.output.remoteUrl }}
-  #     - title: Open in Catalog
-  #       icon: catalog
-  #       entityRef: ${{ steps.register.output.entityRef }}
