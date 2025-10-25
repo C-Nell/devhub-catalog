@@ -27,7 +27,22 @@ spec:
         url: ./skeleton
         values:
           name: ${{ parameters.name }}
-    
+
+    - id: debug-all-user-data
+      name: Debug All User Data
+      action: debug:log
+      input:
+        message: |
+          === USER DATA DEBUG ===
+          user.ref: {{ user.ref }}
+          user.entity: {{ user.entity }}
+          user.entity.ref: {{ user.entity.ref }}
+          user.entity.metadata.name: {{ user.entity.metadata.name }}
+          user.entity.spec: {{ user.entity.spec }}
+          user.entity.spec.profile: {{ user.entity.spec.profile }}
+          user.entity.spec.profile.displayName: {{ user.entity.spec.profile.displayName }}
+          user.entity.spec.profile.email: {{ user.entity.spec.profile.email }}
+          
     - id: publish
       name: Publish to GitHub
       action: publish:github
