@@ -15,6 +15,9 @@ spec:
       action: debug:log
       input:
         message: |
-          User: ${{ user.entity.metadata.name }}
-          Email: ${{ user.entity.spec.profile.email }}
-          Display Name: ${{ user.entity.spec.profile.displayName }}
+          User Entity: ${{ user.entity.metadata.name }}
+          Email Entity: ${{ user.entity.spec.profile.email }}
+          Display Name Entity: ${{ user.entity.spec.profile.displayName }}
+          User Ref: ${{ user.ref }}
+          Name Entity: ${{ user.entity.metadata.name }}
+          User Identity Ref: ${{ identity.userEntityRef }}
