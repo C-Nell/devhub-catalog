@@ -1,31 +1,42 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: test-debugging
-  title: Test User debugging
+  name: test-github-repo
+  title: Test GitHub Repo Creation
   description: Simple test template to verify user metadata in commits
 spec:
   owner: group:default/platform
   type: test
   
+  parameters:
+    - title: Repository Info
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          title: Repository Name
+          type: string
+          description: Name for your test repo
+        owner:
+          title: Repository Owner
+          type: string
+          enum:
+            - po-org
+
   steps:
-    - id: dump-context
-      name: Dump Full Context
-      action: debug:log
-      input:
-        message: '${{ user.ref }}'
-        
     - id: debug-all-user-data
       name: Debug All User Data
       action: debug:log
       input:
         message: |
           === USER DATA DEBUG ===
-          user.ref: ${{ user.ref }}
-          user.entity: ${{ user.entity }}
-          user.entity.ref: ${{ user.entity.ref }}
           user.entity.metadata.name: ${{ user.entity.metadata.name }}
-          user.entity.spec: ${{ user.entity.spec }}
-          user.entity.spec.profile: ${{ user.entity.spec.profile }}
-          user.entity.spec.profile.displayName: ${{ user.entity.spec.profile.displayName }}
-          user.entity.spec.profile.email: ${{ user.entity.spec.profile.email }}
+          
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?repo=${{ parameters.name }}&owner=${{ parameters.owner }}
+        description: Test repository created via Backstage
+        gitAuthorName: '${{ user.entity.metadata.name }}'
