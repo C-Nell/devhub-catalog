@@ -8,7 +8,7 @@ spec:
         authorName:
           title: Author Name
           type: string
-          default: '{{ user.entity.spec.profile.displayName }}'
+          default: '{{ user.ref }}'
         authorEmail:
           title: Author Email  
           type: string
