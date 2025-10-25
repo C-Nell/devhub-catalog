@@ -3,14 +3,16 @@ kind: Template
 metadata:
   name: create-service
   title: Create New Service
+  description: Create a new service with attribution metadata
 spec:
-  owner: group:default/developer
+  owner: group:default/platform
   type: service
   
   parameters:
     - title: Service Information
       required:
         - name
+        - description
       properties:
         name:
           title: Service Name
@@ -18,6 +20,13 @@ spec:
         description:
           title: Description
           type: string
+        owner:
+          title: Owner
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group]
   
   steps:
     - id: fetch
@@ -28,20 +37,25 @@ spec:
         values:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
     
-    # Add attribution file
-    - id: create-attribution
-      name: Add Attribution Metadata
-      action: fs:write
+    # Create attribution metadata file
+    - id: create-metadata
+      name: Create Attribution Metadata
+      action: roadiehq:utils:fs:write
       input:
-        path: .backstage-metadata.yaml
+        path: .backstage/metadata.yaml
         content: |
           createdBy:
-            backstageUser: ${{ user.entity.metadata.name }}
-            backstageEmail: ${{ user.entity.spec.profile.email }}
+            user: ${{ user.entity.metadata.name }}
+            email: ${{ user.entity.spec.profile.email }}
             displayName: ${{ user.entity.spec.profile.displayName }}
             timestamp: ${{ "" | now }}
-            source: backstage-scaffolder
+            source: IRS Developer Hub
+          component:
+            name: ${{ parameters.name }}
+            description: ${{ parameters.description }}
+            owner: ${{ parameters.owner }}
     
     - id: publish
       name: Publish to GitHub
@@ -49,15 +63,13 @@ spec:
       input:
         repoUrl: github.com?repo=${{ parameters.name }}&owner=po-org
         description: ${{ parameters.description }}
-        # Service account creates repo, but commit shows Backstage user
         gitAuthorName: ${{ user.entity.spec.profile.displayName or user.entity.metadata.name }}
         gitAuthorEmail: ${{ user.entity.spec.profile.email or 'backstage@irs.gov' }}
-        # Add to commit message
         gitCommitMessage: |
-          Initial commit from Backstage
+          Initial commit from IRS Developer Hub
           
-          Created by: ${{ user.entity.metadata.name }} (${{ user.entity.spec.profile.email }})
-          Via: IRS Developer Hub
+          Created by: ${{ user.entity.spec.profile.displayName }} (${{ user.entity.metadata.name }})
+          Email: ${{ user.entity.spec.profile.email }}
     
     - id: register
       name: Register in Catalog
@@ -65,3 +77,11 @@ spec:
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: /catalog-info.yaml
+  
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
