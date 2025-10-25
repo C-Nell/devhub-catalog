@@ -13,7 +13,7 @@ spec:
       name: Dump Full Context
       action: debug:log
       input:
-        message: '{{ parameters | dump }} {{ user | dump }}'
+        message: '${{ user.ref }}'
         
     - id: debug-all-user-data
       name: Debug All User Data
