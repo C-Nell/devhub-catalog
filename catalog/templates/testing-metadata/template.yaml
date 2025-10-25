@@ -5,11 +5,11 @@ metadata:
   title: User Aware Template
   description: A template that uses user information
 spec:
-  owner: backstage-team  # ← REQUIRED field
-  type: service  # ← REQUIRED field
+  owner: backstage-team
+  type: service
   
   parameters:
-    - title: Project Information  # ← Changed title
+    - title: Project Information
       properties:
         projectName:
           title: Project Name
@@ -28,9 +28,13 @@ spec:
         message: 'User ref: {{ user.ref }}'
 
     - id: publish
-      name: Publish to Git
+      name: Publish to GitHub
       action: publish:github
       input:
-        repoUrl: 'https://github.com/po-org/{{ parameters.projectName }}'  # ← Use parameters
+        # CORRECT FORMATS:
+        repoUrl: 'github.com?repo={{ parameters.projectName }}&owner=your-username'
+        # OR
+        # repoUrl: 'github.com?repo={{ parameters.projectName }}&owner=your-org-name'
+        
         gitAuthorName: '{{ user.ref }}'
         gitAuthorEmail: '{{ user.ref }}@yourcompany.com'
