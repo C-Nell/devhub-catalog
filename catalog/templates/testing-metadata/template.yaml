@@ -1,0 +1,17 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: hello-world-template
+  title: Hello World
+  description: Says Hello to the user that triggered the template.
+spec:
+  owner: user:default/punkle
+  type: service
+
+  parameters: []
+  steps:
+    - id: log-hello
+      name: Say hello to the logged in user
+      action: debug:log
+      input:
+        message: Hello ${{identity.userEntityRef}}
