@@ -3,19 +3,22 @@ kind: Template
 metadata:
   name: user-aware-template
   title: User Aware Template
+  description: A template that uses user information
 spec:
+  owner: backstage-team  # ← REQUIRED field
+  type: service  # ← REQUIRED field
+  
   parameters:
-    - title: User Info
+    - title: Project Information  # ← Changed title
       properties:
-        # Remove template syntax from parameters - use static values
-        authorName:
-          title: Author Name
+        projectName:
+          title: Project Name
           type: string
-          default: ''  # Leave empty
-        authorEmail:
-          title: Author Email  
+          description: Name of your project
+        description:
+          title: Description
           type: string
-          default: ''  # Leave empty
+          description: Project description
 
   steps:
     - id: debug-user
@@ -28,7 +31,6 @@ spec:
       name: Publish to Git
       action: publish:github
       input:
-        repoUrl: 'github.com?repo=my-repo&owner=my-org'
-        # Use user.ref to identify the user
+        repoUrl: 'https://github.com/your-org/{{ parameters.projectName }}'  # ← Use parameters
         gitAuthorName: '{{ user.ref }}'
-        gitAuthorEmail: '{{ user.ref }}@yourcompany.com'  # Adjust pattern as needed
+        gitAuthorEmail: '{{ user.ref }}@yourcompany.com'
