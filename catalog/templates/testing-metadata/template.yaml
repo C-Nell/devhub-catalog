@@ -12,7 +12,7 @@ spec:
         authorEmail:
           title: Author Email  
           type: string
-          default: '{{ user.entity.spec.profile.email }}'
+          default: '{{ user.ref }}'
 
   steps:
     - id: publish
