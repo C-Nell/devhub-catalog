@@ -1,7 +1,7 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: hello-world-template
+  name: testing-metadata
   title: Hello World
   description: Says Hello to the user that triggered the template.
 spec:
