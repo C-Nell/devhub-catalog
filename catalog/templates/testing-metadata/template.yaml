@@ -1,25 +1,34 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
+metadata:
+  name: user-aware-template
+  title: User Aware Template
 spec:
   parameters:
     - title: User Info
       properties:
-        # Pre-populate with user data
+        # Remove template syntax from parameters - use static values
         authorName:
           title: Author Name
           type: string
-          default: '{{ user.ref }}'
+          default: ''  # Leave empty
         authorEmail:
           title: Author Email  
           type: string
-          default: '{{ user.ref }}'
+          default: ''  # Leave empty
 
   steps:
+    - id: debug-user
+      name: Debug User Info
+      action: debug:log
+      input:
+        message: 'User ref: {{ user.ref }}'
+
     - id: publish
       name: Publish to Git
       action: publish:github
       input:
         repoUrl: 'github.com?repo=my-repo&owner=my-org'
-        # Pass user data to git commit
-        gitAuthorName: '{{ parameters.authorName }}'
-        gitAuthorEmail: '{{ parameters.authorEmail }}'
+        # Use user.ref to identify the user
+        gitAuthorName: '{{ user.ref }}'
+        gitAuthorEmail: '{{ user.ref }}@yourcompany.com'  # Adjust pattern as needed
