@@ -4,7 +4,7 @@ metadata:
   name: create-service
   title: Create New Service
 spec:
-  owner: group:default/developers
+  owner: group:default/developer
   type: service
   
   parameters:
