@@ -22,18 +22,6 @@ spec:
               - github.com
   
   steps:
-    - id: fetch
-      name: Create README
-      action: fetch:plain
-      input:
-        content: |
-          # Test Repository
-          
-          This repo was created to test the defaultAuthor configuration.
-          
-          Check the git commit author to verify it's working!
-        targetPath: ./README.md
-    
     - id: publish
       name: Publish to GitHub
       action: publish:github
