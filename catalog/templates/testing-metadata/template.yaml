@@ -1,23 +1,51 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: testing-metadata
-  title: Hello World
-  description: Says Hello to the user that triggered the template.
+  name: test-author-config
+  title: Test Default Author Config
+  description: Simple test to verify defaultAuthor is working
 spec:
-  owner: user:default/punkle
+  owner: user:default/guest
   type: service
-
-  parameters: []
+  
+  parameters:
+    - title: Repository Info
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+  
   steps:
-    - id: log-hello
-      name: Say hello to the logged in user
-      action: debug:log
+    - id: fetch
+      name: Create README
+      action: fetch:plain
       input:
-        message: |
-          User Entity: ${{ user.entity.metadata.name }}
-          Email Entity: ${{ user.entity.spec.profile.email }}
-          Display Name Entity: ${{ user.entity.spec.profile.displayName }}
-          User Ref: ${{ user.ref }}
-          Name Entity: ${{ user.entity.metadata.name }}
-          User Identity Ref: ${{ identity.userEntityRef }}
+        content: |
+          # Test Repository
+          
+          This repo was created to test the defaultAuthor configuration.
+          
+          Check the git commit author to verify it's working!
+        targetPath: ./README.md
+    
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        description: Test repository for defaultAuthor config
+        # gitAuthorName and gitAuthorEmail should be auto-injected from defaultAuthor config!
+  
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.publish.output.entityRef }}
