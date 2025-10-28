@@ -7,7 +7,7 @@ metadata:
   labels:
     team: vm                    # ← ADD THIS
 spec:
-  owner: group:default/guests
+  owner: group:default/vm-team
   type: service
   
   parameters:
