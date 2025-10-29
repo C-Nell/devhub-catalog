@@ -9,7 +9,7 @@ metadata:
   labels:
     visibility: private  # ← Add this!
 spec:
-  owner: developers
+  owner: test
   type: service
   parameters:
     - title: You are about to say hello to your first Backstage template
