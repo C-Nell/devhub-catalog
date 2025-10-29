@@ -7,16 +7,19 @@ metadata:
   annotations:
     restricted: "true"
   labels:
-    visibility: private  # ← Add this!
+    visibility: private
 spec:
   owner: group:default/aws-team
+  type: service
   parameters:
     - title: You are about to say hello to your first Backstage template
       required:
         - name
       properties:
         name:
+          title: Name
           type: string
+          description: Who do you want to say hello to?
   steps:
     - id: log-message
       name: Log Message
