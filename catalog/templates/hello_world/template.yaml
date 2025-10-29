@@ -7,9 +7,6 @@ metadata:
 spec:
   owner: group:default/platform
   type: test
-spec:
-  owner: group:default/aws-team
-  type: service
   parameters:
     - title: You are about to say hello to your first Backstage template
       required:
