@@ -9,7 +9,7 @@ metadata:
   labels:
     visibility: private  # ← Add this!
 spec:
-  owner: test
+  owner: group:default/aws-team
   type: service
   parameters:
     - title: You are about to say hello to your first Backstage template
