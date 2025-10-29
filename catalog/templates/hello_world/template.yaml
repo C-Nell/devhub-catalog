@@ -5,7 +5,7 @@ metadata:
   title: Print Hello World!
   description: Say Hello to a specified name.
   annotations:
-    backstage.io/visibility: public  # ✅ Use annotation instead of label
+    backstage.io/visibility: private  # ✅ Use annotation instead of label
 spec:
   owner: group:default/aws-team
   type: service
