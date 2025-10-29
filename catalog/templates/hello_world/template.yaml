@@ -4,9 +4,12 @@ metadata:
   name: hello-world-template
   title: Print Hello World!
   description: Say Hello to a specified name.
+  annotations:
+    restricted: "true"
+  labels:
+    visibility: private  # ← Add this!
 spec:
-  owner: group:default/platform
-  type: test
+  owner: group:default/aws-team
   parameters:
     - title: You are about to say hello to your first Backstage template
       required:
