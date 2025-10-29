@@ -1,43 +1,73 @@
----
-result: CONDITIONAL
-roleEntityRef: role:default/developer
-pluginId: catalog
-resourceType: catalog-entity
-permissionMapping:
-  - read
-conditions:
-  anyOf:
-    # Show entities owned by user or their groups
-    - rule: IS_ENTITY_OWNER
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rbac-conditional-policies
+  namespace: poteatc-dev
+  uid: 9fd16196-f299-4600-a23a-bd2a052006b9
+  resourceVersion: '5107017104'
+  creationTimestamp: '2025-10-22T11:11:00Z'
+  managedFields:
+    - manager: kubectl-client-side-apply
+      operation: Update
+      apiVersion: v1
+      time: '2025-10-22T11:11:00Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:data': {}
+    - manager: Mozilla
+      operation: Update
+      apiVersion: v1
+      time: '2025-10-29T23:05:24Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:data':
+          'f:rbac-conditional-policies.yaml': {}
+        'f:immutable': {}
+data:
+  rbac-conditional-policies.yaml: |-
+    ---
+    result: CONDITIONAL
+    roleEntityRef: role:default/developer
+    pluginId: catalog
+    resourceType: catalog-entity
+    permissionMapping:
+      - read
+    conditions:
+      anyOf:
+        # Show entities owned by user or their groups
+        - rule: IS_ENTITY_OWNER
+          resourceType: catalog-entity
+          params:
+            claims:
+              - $ownerRefs  # ← Dynamically replaced with user + all their groups
+        # Show any entity with visibility: public label
+        - rule: HAS_ANNOTATION
+          resourceType: catalog-entity  # ← This was missing!
+          params:
+            annotation: backstage.io/visibility
+            value: public
+        - rule: IS_ENTITY_KIND
+          resourceType: catalog-entity
+          params:
+            kinds:
+              - User
+              - Group
+              - Location
+              - Resource
+              - Domain
+    ---
+    result: CONDITIONAL
+    roleEntityRef: role:default/developer
+    pluginId: catalog
+    resourceType: catalog-entity
+    permissionMapping:
+      - update
+      - delete
+    conditions:
+      rule: IS_ENTITY_OWNER
       resourceType: catalog-entity
       params:
         claims:
-          - $ownerRefs  # ← Dynamically replaced with user + all their groups
-    # Show any entity with visibility: public label
-    - rule: HAS_ANNOTATION
-      params:
-        annotation: backstage.io/visibility
-        value: public
-    - rule: IS_ENTITY_KIND
-      resourceType: catalog-entity
-      params:
-        kinds:
-          - User
-          - Group
-          - Location
-          - Resource
-          - Domain
----
-result: CONDITIONAL
-roleEntityRef: role:default/developer
-pluginId: catalog
-resourceType: catalog-entity
-permissionMapping:
-  - update
-  - delete
-conditions:
-  rule: IS_ENTITY_OWNER
-  resourceType: catalog-entity
-  params:
-    claims:
-      - $ownerRefs  # ← User can update/delete if they or their group owns it
+          - $ownerRefs  # ← User can update/delete if they or their group owns it
+binaryData: {}
+immutable: false
