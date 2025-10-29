@@ -7,7 +7,7 @@ metadata:
   annotations:
     restricted: "true"
   labels:
-    visibility: public  # ← Add this!
+    visibility: private  # ← Add this!
 spec:
   owner: developers
   type: service
