@@ -7,7 +7,7 @@ metadata:
   annotations:
     backstage.io/visibility: private  # ✅ Use annotation instead of label
 spec:
-  owner: group:default/aws-team
+  owner: group:default/vm-team
   type: service
   parameters:
     - title: You are about to say hello to your first Backstage template
