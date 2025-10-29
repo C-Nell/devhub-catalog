@@ -1,0 +1,64 @@
+# ========================================
+# CASBIN-STYLE PERMISSIONS FOR ADMIN / PLATFORM
+# ========================================
+# Admin - Full access to everything
+p, role:default/admin, catalog.entity.read, read, allow
+p, role:default/admin, catalog.entity.create, create, allow
+p, role:default/admin, catalog.entity.delete, delete, allow
+p, role:default/admin, catalog.entity.refresh, update, allow
+p, role:default/admin, catalog.entity.validate, use, allow
+p, role:default/admin, catalog.location.read, read, allow
+p, role:default/admin, catalog.location.create, create, allow
+p, role:default/admin, catalog.location.delete, delete, allow
+p, role:default/admin, catalog.location.analyze, use, allow
+p, role:default/admin, scaffolder.template.parameter.read, read, allow
+p, role:default/admin, scaffolder.template.step.read, read, allow
+p, role:default/admin, scaffolder.action.execute, use, allow
+p, role:default/admin, scaffolder.task.cancel, use, allow
+p, role:default/admin, scaffolder.task.create, create, allow
+p, role:default/admin, scaffolder.task.read, read, allow
+p, role:default/admin, scaffolder.template.management, use, allow
+p, role:default/admin, policy.entity.read, read, allow
+p, role:default/admin, policy.entity.create, create, allow
+p, role:default/admin, policy.entity.update, update, allow
+p, role:default/admin, policy.entity.delete, delete, allow
+# Adoption Insights permissions for admin
+p, role:default/admin, adoption-insights.events.read, read, allow
+# Bulk Import
+p, role:default/admin, bulk.import, use, allow
+
+# ========================================
+# Developer PERMISSIONS
+# ========================================
+# NOTE: catalog.entity.read is handled by conditional RBAC policy
+# This allows fine-grained control based on ownership and visibility
+# Basic CRUD permissions
+p, role:default/developer, catalog.entity.create, create, allow
+p, role:default/developer, catalog.entity.refresh, update, allow
+p, role:default/developer, catalog.entity.validate, use, allow
+
+# NOTE: catalog.entity.delete and catalog.entity.update are handled by conditional RBAC
+# Only owners can delete/update entities (controlled by IS_ENTITY_OWNER rule)
+# Location permissions
+p, role:default/developer, catalog.location.read, read, allow
+p, role:default/developer, catalog.location.create, create, allow
+p, role:default/developer, catalog.location.analyze, use, allow
+
+# NOTE: catalog.location.delete can be handled by conditional policy if needed
+# For now, allowing all developers to delete locations
+p, role:default/developer, catalog.location.delete, delete, allow
+
+# Scaffolder permissions - needed to view and use templates
+p, role:default/developer, scaffolder.template.parameter.read, read, allow
+p, role:default/developer, scaffolder.template.step.read, read, allow
+p, role:default/developer, scaffolder.action.execute, use, allow
+p, role:default/developer, scaffolder.task.cancel, use, allow
+p, role:default/developer, scaffolder.task.create, create, allow
+p, role:default/developer, scaffolder.task.read, read, allow
+p, role:default/developer, scaffolder.template.management, use, allow
+
+# ========================================
+# ROLE ASSIGNMENTS
+# ========================================
+g, user:default/c-nell, role:default/developer
+g, user:development/guest, role:default/admin
