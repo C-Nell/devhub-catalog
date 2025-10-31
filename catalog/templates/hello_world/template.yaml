@@ -5,9 +5,9 @@ metadata:
   title: Print Hello World!
   description: Say Hello to a specified name.
   annotations:
-    backstage.io/visibility: private  # ✅ Use annotation instead of label
+    backstage.io/visibility: public  # ← Add this annotation here!
 spec:
-  owner: group:default/vm-team
+  owner: group:default/test
   type: service
   parameters:
     - title: You are about to say hello to your first Backstage template
