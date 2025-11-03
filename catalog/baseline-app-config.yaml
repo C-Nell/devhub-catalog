@@ -1,0 +1,18 @@
+app:
+  baseUrl: ""
+auth:
+  providers: {}
+backend:
+  auth:
+    externalAccess:
+    - options:
+        secret: ${BACKEND_SECRET}
+        subject: legacy-default-config
+      type: legacy
+  baseUrl: ::
+  cors:
+    origin: ""
+  database:
+    connection:
+      password: ${POSTGRESQL_ADMIN_PASSWORD}
+      user: postgres
