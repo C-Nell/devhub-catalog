@@ -34,41 +34,27 @@ data:
       - read
     conditions:
       anyOf:
-        # Show entities owned by user or their groups
+        # Condition 1: Entities owned by user
         - rule: IS_ENTITY_OWNER
           resourceType: catalog-entity
           params:
             claims:
               - $ownerRefs
         
-        # Show any entity with visibility: public label
+        # Condition 2: Public entities
         - rule: HAS_ANNOTATION
           resourceType: catalog-entity
           params:
             annotation: backstage.io/visibility
             value: public
         
-        # Allow viewing certain "safe" kinds for everyone
+        # Condition 3: Group and User kinds
         - rule: IS_ENTITY_KIND
           resourceType: catalog-entity
           params:
-            kinds:
-              - User
+            kinds: 
               - Group
-              - Location  # ← ADD THIS so you can see Locations to delete them
-    ---
-    result: CONDITIONAL
-    roleEntityRef: role:default/developer
-    pluginId: catalog
-    resourceType: catalog-entity
-    permissionMapping:
-      - update
-      - delete
-    conditions:
-      rule: IS_ENTITY_OWNER
-      resourceType: catalog-entity
-      params:
-        claims:
-          - $ownerRefs
+              - User
+              - Location
 binaryData: {}
 immutable: false
