@@ -67,8 +67,6 @@ spec:
       name: Publish to GitHub
       action: publish:github
       input:
-        allowedHosts:
-          - github.com
         description: ${{ parameters.description }}
         repoUrl: ${{ parameters.repoUrl }}
         defaultBranch: main
@@ -82,27 +80,7 @@ spec:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
 
-    # Step 4: Send start notification (optional)
-    - id: notify-start
-      name: Send Start Notification
-      action: http:backstage:request
-      input:
-        method: POST
-        path: '/api/notifications'
-        headers:
-          Content-Type: 'application/json'
-        body:
-          recipients:
-            type: 'entity'
-            entityRef: ${{ parameters.owner }}
-          payload:
-            title: 'Template Execution Started'
-            description: 'Your template "${{ parameters.name }}" is being created'
-            topic: 'scaffolder'
-            severity: 'normal'
-            link: ${{ steps.publish.output.remoteUrl }}
-
-    # Step 5: Send completion notification
+    # Step 4: Send completion notification
     - id: notify-complete
       name: Send Completion Notification
       action: http:backstage:request
@@ -121,11 +99,6 @@ spec:
             topic: 'scaffolder'
             severity: 'normal'
             link: ${{ steps.publish.output.remoteUrl }}
-            actions:
-              - title: 'View Repository'
-                url: ${{ steps.publish.output.remoteUrl }}
-              - title: 'View in Catalog'
-                url: '/catalog/default/component/${{ parameters.name }}'
 
   output:
     links:
