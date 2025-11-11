@@ -17,13 +17,14 @@ spec:
           default: test
 
   steps:
-    - id: test-with-token
+    - id: test-with-backend-token
       name: Test with Backend Token
       action: http:backstage:request
       input:
         method: GET
         path: catalog/entities
-        useBackstageIdentity: true
+        headers:
+          Authorization: Bearer ${{ secrets.BACKEND_SECRET }}
 
 
   output:
