@@ -22,7 +22,7 @@ spec:
       action: http:backstage:request
       input:
         method: GET
-        path: /api/catalog/entities
+        path: catalog/entities
         headers:
           Authorization: Bearer ${{ secrets.BACKEND_SECRET }}
 
