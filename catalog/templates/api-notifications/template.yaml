@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: test-http-localhost
-  title: Test HTTP with Localhost
-  description: Test HTTP request with full URL
+  name: test-http-simple
+  title: Test HTTP Simple
+  description: Test HTTP with correct syntax
 spec:
   owner: platform-team
   type: service
@@ -17,13 +17,14 @@ spec:
           default: test
 
   steps:
-    - id: test-with-baseurl
-      name: Test with Base URL
+    - id: test-catalog
+      name: Test Catalog API
       action: http:backstage:request
       input:
         method: GET
-        baseUrl: http://localhost:7007
         path: /api/catalog/entities
+        headers:
+          Accept: application/json
 
   output:
     text:
