@@ -23,8 +23,8 @@ spec:
       input:
         method: GET
         path: catalog/entities
-        headers:
-          Authorization: Bearer ${{ secrets.BACKEND_SECRET }}
+        useBackstageIdentity: true
+
 
   output:
     text:
