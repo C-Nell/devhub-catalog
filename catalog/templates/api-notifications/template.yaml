@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: test-http-simple
-  title: Test HTTP Simple
-  description: Test HTTP with correct syntax
+  name: test-http-with-token
+  title: Test HTTP with Backend Token
+  description: Test HTTP request with authentication
 spec:
   owner: platform-team
   type: service
@@ -17,14 +17,14 @@ spec:
           default: test
 
   steps:
-    - id: test-catalog
-      name: Test Catalog API
+    - id: test-with-token
+      name: Test with Backend Token
       action: http:backstage:request
       input:
         method: GET
         path: /api/catalog/entities
         headers:
-          Accept: application/json
+          Authorization: Bearer ${{ secrets.BACKEND_TOKEN }}
 
   output:
     text:
