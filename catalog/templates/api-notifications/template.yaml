@@ -1,0 +1,136 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: example-template-with-notifications
+  title: Example Template with Notifications
+  description: A scaffolder template that sends notifications on completion
+  tags:
+    - recommended
+    - example
+spec:
+  owner: platform-team
+  type: service
+  
+  parameters:
+    - title: Component Information
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this component does
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+    
+    - title: Repository Information
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    # Step 1: Fetch template
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./template
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    # Step 2: Publish to GitHub
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        allowedHosts:
+          - github.com
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+        repoVisibility: public
+
+    # Step 3: Register component in catalog
+    - id: register
+      name: Register Component
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+    # Step 4: Send start notification (optional)
+    - id: notify-start
+      name: Send Start Notification
+      action: http:backstage:request
+      input:
+        method: POST
+        path: '/api/notifications'
+        headers:
+          Content-Type: 'application/json'
+        body:
+          recipients:
+            type: 'entity'
+            entityRef: ${{ parameters.owner }}
+          payload:
+            title: 'Template Execution Started'
+            description: 'Your template "${{ parameters.name }}" is being created'
+            topic: 'scaffolder'
+            severity: 'normal'
+            link: ${{ steps.publish.output.remoteUrl }}
+
+    # Step 5: Send completion notification
+    - id: notify-complete
+      name: Send Completion Notification
+      action: http:backstage:request
+      input:
+        method: POST
+        path: '/api/notifications'
+        headers:
+          Content-Type: 'application/json'
+        body:
+          recipients:
+            type: 'entity'
+            entityRef: ${{ parameters.owner }}
+          payload:
+            title: 'Template Execution Complete! 🎉'
+            description: 'Your component "${{ parameters.name }}" has been successfully created and registered in the catalog.'
+            topic: 'scaffolder'
+            severity: 'normal'
+            link: ${{ steps.publish.output.remoteUrl }}
+            actions:
+              - title: 'View Repository'
+                url: ${{ steps.publish.output.remoteUrl }}
+              - title: 'View in Catalog'
+                url: '/catalog/default/component/${{ parameters.name }}'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
