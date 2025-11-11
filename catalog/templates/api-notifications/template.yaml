@@ -1,109 +1,130 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: example-template-with-notifications
-  title: Example Template with Notifications
-  description: A scaffolder template that sends notifications on completion
+  name: test-api-endpoints
+  title: Test API Endpoints
+  description: Comprehensive test template for http:backstage:request action
   tags:
-    - recommended
-    - example
+    - test
+    - debugging
 spec:
   owner: platform-team
   type: service
   
   parameters:
-    - title: Component Information
+    - title: Select API Endpoint to Test
       required:
-        - name
-        - owner
+        - endpoint
       properties:
-        name:
-          title: Name
+        endpoint:
+          title: API Endpoint
           type: string
-          description: Unique name of the component
-          ui:autofocus: true
-          ui:options:
-            rows: 5
-        description:
-          title: Description
+          description: Which endpoint do you want to test?
+          enum:
+            - catalog-entities
+            - catalog-locations
+            - notifications
+            - tech-docs
+            - search
+          enumNames:
+            - 'GET /api/catalog/entities (List all entities)'
+            - 'GET /api/catalog/locations (List locations)'
+            - 'POST /api/notifications (Send notification)'
+            - 'GET /api/techdocs/default/component (TechDocs)'
+            - 'GET /api/search/query (Search)'
+          default: catalog-entities
+        
+        notificationRecipient:
+          title: Notification Recipient
           type: string
-          description: Help others understand what this component does
-        owner:
-          title: Owner
+          description: Required if testing notifications (e.g., user:default/c-nell)
+          default: user:default/c-nell
+        
+        notificationMessage:
+          title: Notification Message
           type: string
-          description: Owner of the component
-          ui:field: OwnerPicker
-          ui:options:
-            catalogFilter:
-              kind: [Group, User]
-    
-    - title: Repository Information
-      required:
-        - repoUrl
-      properties:
-        repoUrl:
-          title: Repository Location
-          type: string
-          ui:field: RepoUrlPicker
-          ui:options:
-            allowedHosts:
-              - github.com
+          description: Custom message for notification test
+          default: This is a test notification from the API test template
 
   steps:
-    # # Step 1: Fetch template
-    # - id: fetch-base
-    #   name: Fetch Base Template
-    #   action: fetch:template
-    #   input:
-    #     url: ./template
-    #     values:
-    #       name: ${{ parameters.name }}
-    #       description: ${{ parameters.description }}
-    #       owner: ${{ parameters.owner }}
-    #       destination: ${{ parameters.repoUrl | parseRepoUrl }}
+    # Test 1: GET Catalog Entities
+    - id: test-catalog-entities
+      name: Test GET Catalog Entities
+      if: ${{ parameters.endpoint === 'catalog-entities' }}
+      action: http:backstage:request
+      input:
+        method: GET
+        path: /api/catalog/entities
 
-    # # Step 2: Publish to GitHub
-    # - id: publish
-    #   name: Publish to GitHub
-    #   action: publish:github
-    #   input:
-    #     description: ${{ parameters.description }}
-    #     repoUrl: ${{ parameters.repoUrl }}
-    #     defaultBranch: main
-    #     repoVisibility: public
+    # Test 2: GET Catalog Locations
+    - id: test-catalog-locations
+      name: Test GET Catalog Locations
+      if: ${{ parameters.endpoint === 'catalog-locations' }}
+      action: http:backstage:request
+      input:
+        method: GET
+        path: /api/catalog/locations
 
-    # Step 3: Register component in catalog
-    # - id: register
-    #   name: Register Component
-    #   action: catalog:register
-    #   input:
-    #     repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
-    #     catalogInfoPath: '/catalog-info.yaml'
-
-    # Step 4: Send completion notification
-    - id: notify-complete
-      name: Send Completion Notification
+    # Test 3: POST Notifications
+    - id: test-notifications
+      name: Test POST Notifications
+      if: ${{ parameters.endpoint === 'notifications' }}
       action: http:backstage:request
       input:
         method: POST
         path: /api/notifications
-        headers:
-          Content-Type: 'application/json'
         body:
           recipients:
-            type: 'entity'
-            entityRef: ${{ parameters.owner }}
+            type: entity
+            entityRef: ${{ parameters.notificationRecipient }}
           payload:
-            title: 'Template Execution Complete! 🎉'
-            description: 'Your component "${{ parameters.name }}" has been successfully created and registered in the catalog.'
-            topic: 'scaffolder'
-            severity: 'normal'
-            link: ${{ steps.publish.output.remoteUrl }}
+            title: API Test Notification
+            description: ${{ parameters.notificationMessage }}
+            topic: test
+            severity: normal
 
-  # output:
-  #   links:
-  #     - title: Repository
-  #       url: ${{ steps.publish.output.remoteUrl }}
-  #     - title: Open in catalog
-  #       icon: catalog
-  #       entityRef: ${{ steps.register.output.entityRef }}
+    # Test 4: GET TechDocs
+    - id: test-techdocs
+      name: Test GET TechDocs
+      if: ${{ parameters.endpoint === 'tech-docs' }}
+      action: http:backstage:request
+      input:
+        method: GET
+        path: /api/techdocs/default/component
+
+    # Test 5: GET Search
+    - id: test-search
+      name: Test GET Search
+      if: ${{ parameters.endpoint === 'search' }}
+      action: http:backstage:request
+      input:
+        method: GET
+        path: /api/search/query?term=component
+
+    # Log the result
+    - id: log-result
+      name: Log Test Result
+      action: debug:log
+      input:
+        message: |
+          API Endpoint Test Completed
+          Endpoint tested: ${{ parameters.endpoint }}
+          Status: Success
+
+  output:
+    text:
+      - title: Test Summary
+        content: |
+          ## API Test Results
+          
+          **Endpoint Tested:** ${{ parameters.endpoint }}
+          **Status:** ✅ Success
+          
+          The HTTP request completed successfully. Check the scaffolder logs for detailed response data.
+          
+          ### Tested Endpoint Details:
+          - **catalog-entities**: Lists all entities in the catalog
+          - **catalog-locations**: Lists all registered locations
+          - **notifications**: Sends a test notification to specified user
+          - **tech-docs**: Tests TechDocs API availability
+          - **search**: Tests search API with a sample query
