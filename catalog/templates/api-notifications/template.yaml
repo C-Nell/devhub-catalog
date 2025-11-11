@@ -50,35 +50,35 @@ spec:
               - github.com
 
   steps:
-    # Step 1: Fetch template
-    - id: fetch-base
-      name: Fetch Base Template
-      action: fetch:template
-      input:
-        url: ./template
-        values:
-          name: ${{ parameters.name }}
-          description: ${{ parameters.description }}
-          owner: ${{ parameters.owner }}
-          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+    # # Step 1: Fetch template
+    # - id: fetch-base
+    #   name: Fetch Base Template
+    #   action: fetch:template
+    #   input:
+    #     url: ./template
+    #     values:
+    #       name: ${{ parameters.name }}
+    #       description: ${{ parameters.description }}
+    #       owner: ${{ parameters.owner }}
+    #       destination: ${{ parameters.repoUrl | parseRepoUrl }}
 
-    # Step 2: Publish to GitHub
-    - id: publish
-      name: Publish to GitHub
-      action: publish:github
-      input:
-        description: ${{ parameters.description }}
-        repoUrl: ${{ parameters.repoUrl }}
-        defaultBranch: main
-        repoVisibility: public
+    # # Step 2: Publish to GitHub
+    # - id: publish
+    #   name: Publish to GitHub
+    #   action: publish:github
+    #   input:
+    #     description: ${{ parameters.description }}
+    #     repoUrl: ${{ parameters.repoUrl }}
+    #     defaultBranch: main
+    #     repoVisibility: public
 
     # Step 3: Register component in catalog
-    - id: register
-      name: Register Component
-      action: catalog:register
-      input:
-        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
-        catalogInfoPath: '/catalog-info.yaml'
+    # - id: register
+    #   name: Register Component
+    #   action: catalog:register
+    #   input:
+    #     repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+    #     catalogInfoPath: '/catalog-info.yaml'
 
     # Step 4: Send completion notification
     - id: notify-complete
@@ -100,10 +100,10 @@ spec:
             severity: 'normal'
             link: ${{ steps.publish.output.remoteUrl }}
 
-  output:
-    links:
-      - title: Repository
-        url: ${{ steps.publish.output.remoteUrl }}
-      - title: Open in catalog
-        icon: catalog
-        entityRef: ${{ steps.register.output.entityRef }}
+  # output:
+  #   links:
+  #     - title: Repository
+  #       url: ${{ steps.publish.output.remoteUrl }}
+  #     - title: Open in catalog
+  #       icon: catalog
+  #       entityRef: ${{ steps.register.output.entityRef }}
