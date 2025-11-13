@@ -76,3 +76,24 @@ Baseline Branch (Existing App)
 - bash# Use your existing sssd-rhdh-sbx Application
 - Manually sync in UI when needed
 - Nothing changes here!
+
+## What Happens When You Delete a Feature Branch
+```
+# You delete the feature branch
+git push origin --delete feature/my-feature
+```
+
+### Step-by-Step Process
+```
+1. Branch deleted from GitHub
+   ↓
+2. ApplicationSet controller detects deletion (~30 seconds to 3 minutes)
+   ↓
+3. ApplicationSet removes the Application: sssd-feature-my-feature
+   ↓
+4. Finalizer triggers cleanup
+   ↓
+5. Resources deployed by that app are deleted from sssd-rhdh-sbx namespace
+   ↓
+6. Application disappears from ArgoCD UI ✅
+```
