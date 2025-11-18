@@ -1,74 +1,47 @@
-# .github/workflows/auto-promote.yml
-name: Auto-create promotion PR
-
+name: Auto create promotion PR
 on:
   pull_request:
     types: [closed]
     branches:
-      - dev
-      - preprod
-      - main  # Add main here
+      - sssd-rhdh-sbx
+      - sssd-rhdh-dev
+      - sssd-rhdh-preprod
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   create-promotion-pr:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    concurrency:
+      group: promote-from-${{ github.base_ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
-      - name: Determine next environment
+      - name: Process next environment
         id: next-env
         run: |
-          if [[ "${{ github.base_ref }}" == "dev" ]]; then
-            echo "target=preprod" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.base_ref }}" == "preprod" ]]; then
+          if [[ "${{ github.base_ref }}" == "sssd-rhdh-sbx" ]]; then
+            echo "target=sssd-rhdh-dev" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.base_ref }}" == "sssd-rhdh-dev" ]]; then
+            echo "target=sssd-rhdh-preprod" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.base_ref }}" == "sssd-rhdh-preprod" ]]; then
             echo "target=main" >> $GITHUB_OUTPUT
           fi
-          # No auto-PR after main - that's the end!
       
-      - name: Create PR to next environment
+      - name: Create Pull Request to next environment
         if: steps.next-env.outputs.target != ''
         run: |
           gh pr create \
             --base ${{ steps.next-env.outputs.target }} \
             --head ${{ github.base_ref }} \
-            --title "🚀 Promote to ${{ steps.next-env.outputs.target }}" \
+            --title "✅ Promote to ${{ steps.next-env.outputs.target }}" \
             --body "Auto-promotion from ${{ github.base_ref }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-## Branch Protection for `main`
-
-Make `main` the most protected:
-```
-main (production):
-✓ Require 3+ approvals
-✓ Require specific reviewers (@release-managers, @tech-leads)
-✓ Require all status checks to pass
-✓ Require deployment to preprod first
-✓ No direct pushes (PR only)
-✓ Require signed commits (optional but recommended)
-```
-
-## Complete Flow
-```
-1. sbx (sandbox)
-   - Developer pushes directly
-   - Tests locally
-   
-2. dev (development)  
-   - Create PR: sbx → dev
-   - 1 approval required
-   - Basic CI tests
-   
-3. preprod (pre-production/staging)
-   - Auto-created PR: dev → preprod
-   - 2 approvals required
-   - Full test suite + integration tests
-   
-4. main (PRODUCTION)
-   - Auto-created PR: preprod → main
-   - 3+ approvals required (including release manager)
-   - All checks must pass
-   - This deploys to production
