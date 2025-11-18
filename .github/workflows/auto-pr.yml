@@ -1,0 +1,74 @@
+# .github/workflows/auto-promote.yml
+name: Auto create promotion PR
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - sbx
+      - dev
+      - preprod
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-promotion-pr:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+      
+      - name: Process next environment
+        id: next-env
+        run: |
+          if [[ "${{ github.base_ref }}" == "sbx" ]]; then
+            echo "target=dev" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.base_ref }}" == "dev" ]]; then
+            echo "target=preprod" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.base_ref }}" == "preprod" ]]; then
+            echo "target=main" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Pull Request to next environment
+        if: steps.next-env.outputs.target != ''
+        run: |
+          gh pr create \
+            --base ${{ steps.next-env.outputs.target }} \
+            --head ${{ github.base_ref }} \
+            --title "✅ Promote to ${{ steps.next-env.outputs.target }}" \
+            --body "Auto-promotion from ${{ github.base_ref }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  # ---------------------------------------------------------
+  # Sync environment branches to main after main updates
+  # ---------------------------------------------------------
+  sync-env-branches:
+    if: github.event.pull_request.merged == true && github.base_ref == 'main'
+    needs: create-promotion-pr
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Sync dev and preprod to match main
+        run: |
+          for BRANCH in dev preprod; do
+            echo "Syncing $BRANCH → main"
+            git fetch origin $BRANCH
+            git checkout $BRANCH
+
+            # Fast-forward only (safe, non-destructive)
+            git merge --ff-only origin/main || {
+              echo "⚠️ Branch $BRANCH has diverged — manual fix needed."
+              continue
+            }
+
+            git push origin $BRANCH
+          done
