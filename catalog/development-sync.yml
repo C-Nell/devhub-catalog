@@ -1,0 +1,138 @@
+name: Deploy to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - sbx
+          - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get current branch name
+        id: branch
+        run: |
+          BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Set app name
+        id: env
+        run: |
+          if [ "${{ inputs.environment }}" == "sbx" ]; then
+            echo "app_name=rhdh-sbx" >> $GITHUB_OUTPUT
+          else
+            echo "app_name=rhdh-dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get current environment state
+        id: current_state
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.env.outputs.app_name }}"
+          
+          APP_SPEC=$(curl -sSL \
+            -H "Authorization: Bearer $ARGOCD_AUTH_TOKEN" \
+            "https://$ARGOCD_SERVER/api/v1/applications/$APP_NAME")
+          
+          # Get current state
+          CURRENT_BRANCH=$(echo "$APP_SPEC" | jq -r '
+            if .spec.source then
+              .spec.source.targetRevision
+            elif .spec.sources then
+              .spec.sources[0].targetRevision
+            else
+              "unknown"
+            end
+          ')
+          
+          PREVIOUS_USER=$(echo "$APP_SPEC" | jq -r '.metadata.annotations["deployed-by"] // "none"')
+          PREVIOUS_TIME=$(echo "$APP_SPEC" | jq -r '.metadata.annotations["deployed-at"] // "never"')
+          
+          echo "current_branch=$CURRENT_BRANCH" >> $GITHUB_OUTPUT
+          echo "previous_user=$PREVIOUS_USER" >> $GITHUB_OUTPUT
+          echo "previous_time=$PREVIOUS_TIME" >> $GITHUB_OUTPUT
+          
+          echo "  Current State:"
+          echo "  Branch: $CURRENT_BRANCH"
+          echo "  Last deployed by: $PREVIOUS_USER"
+          echo "  Last deployed at: $PREVIOUS_TIME"
+
+      - name: Update targetRevision in ArgoCD
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.env.outputs.app_name }}"
+          BRANCH="${{ steps.branch.outputs.name }}"
+          
+          echo "Updating $APP_NAME to branch: $BRANCH"
+          
+          CURRENT_SPEC=$(curl -sSL \
+            -H "Authorization: Bearer $ARGOCD_AUTH_TOKEN" \
+            "https://$ARGOCD_SERVER/api/v1/applications/$APP_NAME")
+          
+          UPDATED_SPEC=$(echo "$CURRENT_SPEC" | jq \
+            --arg branch "$BRANCH" \
+            --arg deployed_by "${{ github.actor }}" \
+            --arg deployed_at "$(date -Iseconds)" \
+            --arg commit_sha "${{ github.sha }}" \
+            '
+            if .spec.source then
+              .spec.source.targetRevision = $branch
+            else . end |
+            if .spec.sources then
+              .spec.sources = [.spec.sources[] | 
+                if .repoUrl | contains("gitops.git") then
+                  .targetRevision = $branch
+                else . end
+              ]
+            else . end |
+            .metadata.annotations = (.metadata.annotations // {}) + {
+              "deployed-by": $deployed_by,
+              "deployed-at": $deployed_at,
+              "source-branch": $branch,
+              "commit-sha": $commit_sha
+            }
+            ')
+          
+          curl -sSL -X PUT \
+            -H "Authorization: Bearer $ARGOCD_AUTH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$UPDATED_SPEC" \
+            "https://$ARGOCD_SERVER/api/v1/applications/$APP_NAME" > /dev/null
+          
+          echo "Updated! ArgoCD will auto-sync shortly."
+
+      - name: Post deployment summary
+        run: |
+          echo "### Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Previous State" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ steps.current_state.outputs.current_branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed By | ${{ steps.current_state.outputs.previous_user }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed At | ${{ steps.current_state.outputs.previous_time }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## New State" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | \`${{ inputs.environment }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed By | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.current_state.outputs.previous_user }}" != "none" ] && \
+             [ "${{ steps.current_state.outputs.previous_user }}" != "${{ github.actor }}" ]; then
+            echo "⚠️ **Note**: You overwrote ${{ steps.current_state.outputs.previous_user }}'s deployment" >> $GITHUB_STEP_SUMMARY
+          fi
